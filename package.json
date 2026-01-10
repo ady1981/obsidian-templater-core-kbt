@@ -1,0 +1,14 @@
+{
+  "name": "obsidian-templater-core-kbt",
+  "version": "0.0.1",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "Helper files for Obsidian Templater for core-kbt framework",
+  "devDependencies": {
+    "jest": "^30.2.0"
+  }
+}

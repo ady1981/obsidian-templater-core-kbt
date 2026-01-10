@@ -1,0 +1,1 @@
+<% (await tp.system.suggester((item) => item.basename, tp.app.vault.getMarkdownFiles())).basename %>
