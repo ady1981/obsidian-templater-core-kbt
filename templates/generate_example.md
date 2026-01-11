@@ -1,14 +1,18 @@
 <%*
+////
+const extra_output_specification = {Number_of_examples: 2};
+const generation_strategy = {Complexity: 'simple', Diversity_level: 'exhaustive'};
+////
 const selection = tp.file.selection() || '';
 let updText = selection;
 const formatAIResult = (result) => result.target_example_texts.join('\n')
 const calcAIFunction = async () => {
     const target_example_description = selection;
-    const knowledge_domain = tp.file.title;
-    const extra_output_specification = tp.user.client.strObj({Number_of_examples: 2});
-    const generation_strategy = tp.user.client.strObj({Complexity: 'simple', Diversity_level: 'exhaustive'});
+    const target_example_topic = tp.file.title;
+    const extra_output_specification2 = tp.user.client.strProperties(extra_output_specification);
+    const generation_strategy2 = tp.user.client.strProperties(generation_strategy);
     const examples = null;
-     const response = await tp.user.client.generate_example(tp, target_example_description, knowledge_domain, extra_output_specification, generation_strategy, examples);
+     const response = await tp.user.client.generate_example(tp, target_example_description, target_example_topic, extra_output_specification2, generation_strategy2, examples);
     if (response.status === 200) {
       //console.log(`result: ${tp.user.client.strJson(response.json)}`)
       if (response.json.result?.other_notes) {

@@ -1,17 +1,20 @@
 <%*
+////
+const review_strategy = 'Focus_on: evaluation, goal-setting, analysis of strengths and weaknesses, developing actionable recommendations';
+////
 const selection = tp.file.selection() || '';
 const {placeholder} = tp.user.client.config();
 let updText = selection;
 const calcAIFunction = async () => {
     const content = selection;
-    const content_domain = tp.file.title;
-    const review_strategy = 'Focus on: evaluation, goal-setting, analysis of strengths and weaknesses, developing actionable recommendations';
+    const content_topic = tp.file.title;
+    const review_strategy2 = review_strategy;
     const examples = null;
     const response = await tp.user.client.objective_expert_review(
       tp,
       content,
-      content_domain,
-      review_strategy,
+      content_topic,
+      review_strategy2,
       examples
     );
     if (response.status === 200) {

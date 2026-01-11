@@ -1,10 +1,11 @@
-const { strObj, strJson, removeLineWithPlaceholder } = require('../src/client');
+const { strProperties, strJson, removeLineWithPlaceholder, formatDifferenceResult } = require('../src/client');
+const difference = require('./difference.json');
 
-describe('strObj', () => {
+describe('strProperties', () => {
   test('should correctly stringify a simple object', () => {
     const testMap = {'akey': 'avalue'}
     const expected = 'akey: avalue';
-    expect(strObj(testMap)).toBe(expected);
+    expect(strProperties(testMap)).toBe(expected);
   });
 });
 

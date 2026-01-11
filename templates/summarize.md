@@ -1,10 +1,5 @@
 <%*
-const selection = tp.file.selection() || '';
-const {placeholder} = tp.user.client.config();
-let updText = selection;
-const calcAIFunction = async () => {
-    const content = tp.user.client.removeLineWithPlaceholder(selection);
-    const content_domain = tp.file.title;
+////
     const summarizing_strategy = `* The summary should be abstract and express the most valued hint.  
 * It should be no longer than 1 sentence. 
 * Split complex sentence into list items.`;
@@ -21,11 +16,18 @@ summary: |
     * AI assistance,
     * ultra-fast semantic understanding via LSP,
     * zero-configuration support for reproducible environments.
-\`\`\``;    
+\`\`\``;
+////
+const selection = tp.file.selection() || '';
+const {placeholder} = tp.user.client.config();
+let updText = selection;
+const calcAIFunction = async () => {
+    const content = tp.user.client.removeLineWithPlaceholder(selection);
+    const content_topic = tp.file.title;    
     const response = await tp.user.client.abstractive_summarize(
       tp,
       content,
-      content_domain,
+      content_topic,
       summarizing_strategy,
       examples      
     );

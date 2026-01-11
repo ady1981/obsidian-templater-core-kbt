@@ -1,0 +1,37 @@
+<%*
+////
+const analysis_strategy = {'Granularity': 'fine-grained'}
+////
+const client = tp.user.client;
+const {differenceSeparator} = client.config();
+const selection = tp.file.selection() || '';
+let updText = selection;
+const formatAIResult = client.formatDifferenceResult;
+const calcAIFunction = async (items) => {    
+    const items_topic = tp.file.title;
+    const [left_item, right_item] = items;
+    const extra_output_specification = null;
+    const analysis_strategy2 = client.maybeWithHeader(client.strProperties(analysis_strategy), 'Analysis strategy');
+    const examples = null;
+    const response = await client.aspect_based_devergence_analysis(tp, items_topic, left_item, right_item, extra_output_specification, analysis_strategy2, examples);
+    if (response.status === 200) {
+      //console.log(client.strJson(response.json))
+      if (response.json.result?.other_notes) {
+        console.log(`other_notes: ${response.json.result.other_notes}`)
+      }
+      return formatAIResult(response.json.result, items)
+    }
+}
+
+if (selection.length > 0) {
+  const items = selection.split(differenceSeparator);
+  if (items.length == 2) {
+    updText = selection.trim() + '\n' + (await calcAIFunction(items)) + '\n';
+  } else {
+    new Notice().noticeEl.append(createEl('strong', { text: `No items separated by '${differenceSeparator.trim()}'`}));
+  }  
+} else {    
+    new Notice().noticeEl.append(createEl('strong', { text: 'No selection' }));
+}
+tp.file.cursor_append(updText)
+-%>
