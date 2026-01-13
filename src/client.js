@@ -11,6 +11,7 @@ function strJson(obj) {
 }    
 
 function strProperties(obj) {
+    if (! obj) { return '' }
     return Object.entries(obj)
       .filter(([, value]) => value !== null && value !== undefined && value !== '')
       .map(([key, value]) => `${key}: ${value}`)
@@ -32,7 +33,7 @@ function removeLineWithPlaceholder(text) {
 
 function withLanguageOutputSpecification(extra_output_specification) {
     const lang_output_specification = strProperties({'Output_language': config.responseLanguage})
-    const extra_output_specification2 = extra_output_specification ?
+    const extra_output_specification2 = isNotEmpty(extra_output_specification) ?
       lang_output_specification + '\n' + extra_output_specification :
       lang_output_specification;
     return extra_output_specification2
@@ -114,39 +115,39 @@ async function information_retrieval(tp, target_item_description, target_item_to
 
 const isString = (value) => typeof value === "string";
 
-const normalizeStr = (str) => isString(str) ? str.normalize('NFD').replace(/[\u0300-\u036f]/g, '') : str;
+const normalizeText = (text) => isString(text) ? text.normalize('NFD').replace(/[\u0300-\u036f]/g, '') : text;
 
-const sanitizeName = (name) => isString(name) ? normalizeStr(name).trim().replace(/\s+/g, '-') : name; 
+const sanitizeText = (text) => isString(text) ? normalizeText(text).trim().replace(/\s+/g, '-') : text; 
 
 function getOrDefault(obj, key, defaultValue) {
   return obj[key] ?? defaultValue;
 }
 
-function strPrimaryProperty(keyPath, value) {
-    const keyStr = keyPath.filter(c => c).map(sanitizeName).join('.');
-    return `**${keyStr}**:: ${normalizeStr(value)}`
-}
-function strSecondaryProperty(keyPath, value) {
-    const keyStr = keyPath.filter(c => c).map(sanitizeName).join('.');
-    return `${keyStr}:: ${normalizeStr(value)}`
+function strPrimaryProperty(keyPath, value, opts) {
+    const keyStr = keyPath.filter(c => c).map(c => opts?.sanitizeText ? sanitizeText(c) : c).join('.');
+    return `**${keyStr}**:: ${opts?.normalizeText ? normalizeText(value) : value}`
 }
 
-function formatAspectAnalysisResult(result) { 
+function strSecondaryProperty(keyPath, value, opts) {
+    const keyStr = keyPath.filter(c => c).map(c => opts?.sanitizeText ? sanitizeText(c) : c).join('.');
+    return `${keyStr}:: ${opts?.normalizeText ? normalizeText(value) : value}`
+}
+
+function formatAspectAnalysisResult(result, opts = {sanitizeText: true, normalizeText: false}) { 
     const properties = result.by_aspects.flatMap(aspect =>
     aspect.features.reduce(({occurs, result}, feature) => {
         occurs[feature.feature_name] = getOrDefault(occurs, feature.feature_name, 0) + 1;
         const idxItem = occurs[feature.feature_name] >= 2 ? occurs[feature.feature_name] : null;
         const updResult = [...result,
             aspect?.is_primary_aspect ?
-            strPrimaryProperty([aspect.main_elementary_aspect_name, feature.feature_name, idxItem], feature.feature_elementary_value_term) :
-            strSecondaryProperty([aspect.main_elementary_aspect_name, feature.feature_name, idxItem], feature.feature_elementary_value_term)];
+            strPrimaryProperty([aspect.main_elementary_aspect_name, feature.feature_name, idxItem], feature.feature_elementary_value, opts) :
+            strSecondaryProperty([aspect.main_elementary_aspect_name, feature.feature_name, idxItem], feature.feature_elementary_value, opts)];
         return {occurs, result: updResult}
         }, {occurs: {}, result: []})
       .result
     )
     return properties.join('\n');
 }
-
 
 async function aspect_based_analysis(tp, content, content_topic, extra_output_specification, analysis_scope, analysis_strategy, examples) {
     const extra_output_specification2 = withLanguageOutputSpecification(extra_output_specification);
@@ -157,7 +158,7 @@ async function aspect_based_analysis(tp, content, content_topic, extra_output_sp
         body: JSON.stringify({
             content, 
             content_topic,
-            _extra_output_specification: extra_output_specification2,
+            _extra_output_specification: maybeWithHeader(extra_output_specification2, 'Extra output specification'),
             _analysis_scope: maybeWithHeader(analysis_scope, 'Analysis scope'),
             _analysis_strategy: maybeWithHeader(analysis_strategy, 'Analysis strategy'),
             _examples: maybeWithHeader(examples, 'Examples')
@@ -176,7 +177,7 @@ async function constrained_text_rewriting(tp, content, content_topic, extra_outp
         body: JSON.stringify({
             content, 
             content_topic,
-            _extra_output_specification: extra_output_specification2,
+            _extra_output_specification: maybeWithHeader(extra_output_specification2, 'Extra output specification'),
             _transformation_constraints: maybeWithHeader(transformation_constraints, 'Transformation constraints'),
             _examples: maybeWithHeader(examples, 'Examples')
         })
@@ -185,19 +186,19 @@ async function constrained_text_rewriting(tp, content, content_topic, extra_outp
     return await tp.obsidian.requestUrl(request);
 }
 
-function formatDifferenceResult(result, items) {
+function formatDifferenceResult(result, items, opts = {sanitizeText: true, normalizeText: false}) {
   const leftLines = result.by_aspects.flatMap(aspect =>
     aspect.features.map(feature =>
         aspect?.is_primary_aspect ?
-          strPrimaryProperty([aspect.main_elementary_aspect_name, feature.feature_name], feature.left_item_elementary_value_term) :
-          strSecondaryProperty([aspect.main_elementary_aspect_name, feature.feature_name], feature.left_item_elementary_value_term)
+          strPrimaryProperty([aspect.main_elementary_aspect_name, feature.feature_name], feature.left_item_elementary_value, opts) :
+          strSecondaryProperty([aspect.main_elementary_aspect_name, feature.feature_name], feature.left_item_elementary_value, opts)
     )
   );
   const rightLines = result.by_aspects.flatMap(aspect =>
     aspect.features.map(feature =>
         aspect?.is_primary_aspect ?
-          strPrimaryProperty([aspect.main_elementary_aspect_name, feature.feature_name], feature.right_item_elementary_value_term) :
-          strSecondaryProperty([aspect.main_elementary_aspect_name, feature.feature_name], feature.right_item_elementary_value_term)
+          strPrimaryProperty([aspect.main_elementary_aspect_name, feature.feature_name], feature.right_item_elementary_value, opts) :
+          strSecondaryProperty([aspect.main_elementary_aspect_name, feature.feature_name], feature.right_item_elementary_value, opts)
     )
   );
   return `# Difference
@@ -221,7 +222,7 @@ async function aspect_based_devergence_analysis(tp, items_topic, left_item, righ
             items_topic,
             left_item,
             right_item,
-            _extra_output_specification: extra_output_specification2,
+            _extra_output_specification: maybeWithHeader(extra_output_specification2, 'Extra output specification'),
             _analysis_strategy: maybeWithHeader(analysis_strategy, 'Analysis strategy'),
             _examples: maybeWithHeader(examples, 'Examples')
         })
