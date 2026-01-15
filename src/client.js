@@ -95,7 +95,7 @@ async function generate_example(tp, target_example_description, target_example_t
     return await tp.obsidian.requestUrl(request);
 }
 
-async function information_retrieval(tp, target_item_description, target_item_topic, extra_output_specification, retrieval_strategy, examples) {
+async function information_retrieval(tp, target_item_description, target_item_topic, extra_output_specification, retrieval_strategy, datasource_specification, examples) {
     const extra_output_specification2 = withLanguageOutputSpecification(extra_output_specification);
     const request = {
         url: `${config.aiFunctionsBaseURL}/ai-func/information_retrieval`,
@@ -106,10 +106,11 @@ async function information_retrieval(tp, target_item_description, target_item_to
             target_item_topic,
             _extra_output_specification: maybeWithHeader(extra_output_specification2, 'Extra output specification'),
             _retrieval_strategy: maybeWithHeader(retrieval_strategy, 'Retrieval strategy'),
-            _examples: maybeWithHeader(examples, 'Examples')
+            _datasource_specification: maybeWithHeader(datasource_specification, 'Datasource specification'),
+            _examples: maybeWithHeader(examples, 'Examples'),            
         })
     }
-    // console.log('request:', strJson(request));
+    //console.log('request:', strJson(request));
     return await tp.obsidian.requestUrl(request);
 }
 
