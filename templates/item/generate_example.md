@@ -3,14 +3,15 @@
 const extra_output_specification = {Number_of_examples: 2};
 const generation_strategy = {Complexity: 'simple', Diversity_level: 'exhaustive'};
 ////
+const client = tp.user.client;
 const selection = tp.file.selection() || '';
 let updText = selection;
 const formatAIResult = (result) => result.target_example_texts.join('\n')
 const calcAIFunction = async () => {
     const target_example_description = selection;
     const target_example_topic = tp.file.title;
-    const extra_output_specification2 = tp.user.client.strProperties(extra_output_specification);
-    const generation_strategy2 = tp.user.client.strProperties(generation_strategy);
+    const extra_output_specification2 = client.strProperties(extra_output_specification);
+    const generation_strategy2 = client.strProperties(generation_strategy);
     const examples = null;
      const response = await tp.user.client.generate_example(tp, target_example_description, target_example_topic, extra_output_specification2, generation_strategy2, examples);
     if (response.status === 200) {

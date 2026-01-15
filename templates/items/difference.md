@@ -1,8 +1,13 @@
 <%*
 ////
-const analysis_strategy = {Granularity: 'Fine-grained'}
-const extra_output_specification = {Verbosity: 'Lowest'}
-////
+const analysis_strategy = {
+//  Aspects_to_analyze: 'Primary',
+  Granularity: 'Fine-grained',
+const extra_output_specification = {
+//  Verbosity: 'Low'
+  Verbosity: 'High',
+}
+ ////
 const client = tp.user.client;
 const {differenceSeparator} = client.config();
 const selection = tp.file.selection() || '';

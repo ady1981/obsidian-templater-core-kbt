@@ -1,9 +1,10 @@
 <%*
 ////
-    const summarizing_strategy = `* The summary should be abstract and express the most valued hint.  
-* It should be no longer than 1 sentence. 
-* Split complex sentence into list items.`;
-    const examples = `## Summarizing strategy
+const summarizing_strategy = {
+  Summary_should_be: 'abstract and express the most valued hint, no longer than 1 sentence',
+  Split_strategy: 'split complex sentence into list items'
+};
+const examples = `## Summarizing strategy
 ...
 ## Content domain
 Innovative ideas
@@ -18,17 +19,19 @@ summary: |
     * zero-configuration support for reproducible environments.
 \`\`\``;
 ////
+const client = tp.user.client;
 const selection = tp.file.selection() || '';
 const {placeholder} = tp.user.client.config();
 let updText = selection;
 const calcAIFunction = async () => {
     const content = tp.user.client.removeLineWithPlaceholder(selection);
     const content_topic = tp.file.title;    
+    const summarizing_strategy2 = client.strProperties(summarizing_strategy);
     const response = await tp.user.client.abstractive_summarize(
       tp,
       content,
       content_topic,
-      summarizing_strategy,
+      summarizing_strategy2,
       examples      
     );
     if (response.status === 200) {
