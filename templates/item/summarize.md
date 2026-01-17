@@ -2,7 +2,7 @@
 ////
 const summarizing_strategy = {
   Summary_should_be: 'abstract and express the most valued hint, no longer than 1 sentence',
-  Split_strategy: 'split complex sentence into list items'
+  Split_sentence_strategy: 'split complex sentence into list items'
 };
 const examples = `## Summarizing strategy
 ...

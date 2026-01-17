@@ -1,7 +1,10 @@
+const itemsSeparator = '\n';
+
 const config = {
     placeholder: '{{}}',
-    differenceSeparator: ' VS ',
-    aiFunctionsBaseURL: 'http://127.0.0.1:5000',
+    itemsSeparator: itemsSeparator,
+    differenceSeparator: itemsSeparator,
+    aiFunctionsBaseURL: 'http://127.0.0.1:5001',
     aiFunctionsAPIToken: 'xxx',
     responseLanguage: 'Russian'
 }
@@ -61,7 +64,7 @@ function maybeWithHeader(value, header) {
        ''
 }
 
-async function objective_expert_review(tp, content, content_topic, review_strategy, examples) {
+async function objective_expert_review(tp, content, content_topic, review_strategy, examples, meta) {
     const request = {
         url: `${config.aiFunctionsBaseURL}/ai-func/objective_expert_review`,
         method: 'PUT',
@@ -71,7 +74,8 @@ async function objective_expert_review(tp, content, content_topic, review_strate
             content, 
             content_topic, 
             review_strategy, 
-            _examples: maybeWithHeader(examples, 'Examples')
+            _examples: maybeWithHeader(examples, 'Examples'),
+            meta
         })
     }
     return await tp.obsidian.requestUrl(request);
@@ -150,7 +154,7 @@ function formatAspectAnalysisResult(result, opts = {sanitizeText: true, normaliz
     return properties.join('\n');
 }
 
-async function aspect_based_analysis(tp, content, content_topic, extra_output_specification, analysis_scope, analysis_strategy, examples) {
+async function aspect_based_analysis(tp, content, content_topic, extra_output_specification, analysis_scope, analysis_strategy, examples, meta) {
     const extra_output_specification2 = withLanguageOutputSpecification(extra_output_specification);
     const request = {
         url: `${config.aiFunctionsBaseURL}/ai-func/aspect_based_analysis`,
@@ -162,7 +166,8 @@ async function aspect_based_analysis(tp, content, content_topic, extra_output_sp
             _extra_output_specification: maybeWithHeader(extra_output_specification2, 'Extra output specification'),
             _analysis_scope: maybeWithHeader(analysis_scope, 'Analysis scope'),
             _analysis_strategy: maybeWithHeader(analysis_strategy, 'Analysis strategy'),
-            _examples: maybeWithHeader(examples, 'Examples')
+            _examples: maybeWithHeader(examples, 'Examples'),
+            meta
         })
     }
     // console.log('request:', strJson(request));
@@ -213,7 +218,7 @@ ${rightLines.join('\n')}
 `;
 }
 
-async function aspect_based_devergence_analysis(tp, items_topic, left_item, right_item, extra_output_specification, analysis_strategy, examples) {
+async function aspect_based_devergence_analysis(tp, items_topic, left_item, right_item, extra_output_specification, analysis_strategy, examples, meta) {
     const extra_output_specification2 = withLanguageOutputSpecification(extra_output_specification);
     const request = {
         url: `${config.aiFunctionsBaseURL}/ai-func/aspect_based_devergence_analysis`,
@@ -225,12 +230,33 @@ async function aspect_based_devergence_analysis(tp, items_topic, left_item, righ
             right_item,
             _extra_output_specification: maybeWithHeader(extra_output_specification2, 'Extra output specification'),
             _analysis_strategy: maybeWithHeader(analysis_strategy, 'Analysis strategy'),
-            _examples: maybeWithHeader(examples, 'Examples')
+            _examples: maybeWithHeader(examples, 'Examples'),
+            meta
         })
     }
-    // console.log('request:', strJson(request));
+    console.log('request:', strJson(request));
     return await tp.obsidian.requestUrl(request);
 }
+
+
+async function disjoint_sequence_item_generation(tp, input_sequence, input_sequence_specification, generation_strategy, extra_output_specification, meta) {
+    const extra_output_specification2 = withLanguageOutputSpecification(extra_output_specification);
+    const request = {
+        url: `${config.aiFunctionsBaseURL}/ai-func/disjoint_sequence_item_generation`,
+        method: 'PUT',
+        headers: {'Api-Token': config.aiFunctionsAPIToken, 'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            input_sequence: input_sequence,
+            _input_sequence_specification: maybeWithHeader(input_sequence_specification, '# Input sequence specification'),
+            _generation_strategy: maybeWithHeader(generation_strategy, '# Generation strategy'),
+            _extra_output_specification: maybeWithHeader(extra_output_specification2, '# Extra output specification'),
+            meta
+        })
+    }
+    //console.log('request:', strJson(request));
+    return await tp.obsidian.requestUrl(request);
+}
+
 
 
 module.exports = {
@@ -248,5 +274,6 @@ module.exports = {
     aspect_based_analysis,
     constrained_text_rewriting,
     formatDifferenceResult,
-    aspect_based_devergence_analysis
+    aspect_based_devergence_analysis,
+    disjoint_sequence_item_generation
 }

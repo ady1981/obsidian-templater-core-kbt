@@ -1,6 +1,10 @@
 <%*
 ////
 const review_strategy = {Focus_on: 'evaluation, goal-setting, analysis of strengths and weaknesses, developing actionable recommendations'};
+const meta = {
+//    model: 'x-ai/grok-4',
+    model: 'deepseek/deepseek-chat'
+}
 ////
 const selection = tp.file.selection() || '';
 const client = tp.user.client;
@@ -16,7 +20,8 @@ const calcAIFunction = async () => {
       content,
       content_topic,
       review_strategy2,
-      examples
+      examples,
+      meta
     );
     if (response.status === 200) {
       //console.log(`result: ${tp.user.client.strJson(response.json)}`)
