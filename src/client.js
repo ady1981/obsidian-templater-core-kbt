@@ -6,7 +6,9 @@ const config = {
     differenceSeparator: itemsSeparator,
     aiFunctionsBaseURL: 'http://127.0.0.1:5001',
     aiFunctionsAPIToken: 'xxx',
-    responseLanguage: 'Russian'
+    responseLanguage: 'Russian',
+    emptyValueMark: '-',
+    disjointnessScoreThreshold: 0.9,
 }
 
 function strJson(obj) {
@@ -25,6 +27,10 @@ function isNotEmpty(strOrList) {
     return strOrList && strOrList.length > 0;
 }
 
+function isEmpty(strOrList) {
+    return !strOrList || strOrList.length == 0;
+}
+
 function removeLineWithPlaceholder(text) {
     if (!text) {
         return text;
@@ -35,14 +41,18 @@ function removeLineWithPlaceholder(text) {
 }
 
 function withLanguageOutputSpecification(extra_output_specification) {
-    const lang_output_specification = strProperties({'Output_language': config.responseLanguage})
-    const extra_output_specification2 = isNotEmpty(extra_output_specification) ?
-      lang_output_specification + '\n' + extra_output_specification :
-      lang_output_specification;
-    return extra_output_specification2
+    if (extra_output_specification.includes('Output_language:')) {
+        return extra_output_specification
+    } else {
+        const lang_output_specification = strProperties({'Output_language': config.responseLanguage})
+        const extra_output_specification2 = isNotEmpty(extra_output_specification) ?
+          lang_output_specification + '\n' + extra_output_specification :
+          lang_output_specification;
+        return extra_output_specification2
+    }
 }
 
-async function abstractive_summarize(tp, content, content_topic, summarizing_strategy, examples) {
+async function abstractive_summarize(tp, content, content_topic, summarizing_strategy, examples, meta) {
     const request = {
         url: `${config.aiFunctionsBaseURL}/ai-func/abstractive_summarize`,
         method: 'PUT',
@@ -52,7 +62,8 @@ async function abstractive_summarize(tp, content, content_topic, summarizing_str
             content, 
             content_topic,
             summarizing_strategy,
-            _examples: maybeWithHeader(examples, 'Examples')
+            _examples: maybeWithHeader(examples, 'Examples'),
+            meta
         })
     };
     return await tp.obsidian.requestUrl(request);
@@ -81,7 +92,7 @@ async function objective_expert_review(tp, content, content_topic, review_strate
     return await tp.obsidian.requestUrl(request);
 }
 
-async function generate_example(tp, target_example_description, target_example_topic, extra_output_specification, generation_strategy, examples) {
+async function generate_example(tp, target_example_description, target_example_topic, extra_output_specification, generation_strategy, examples, meta) {
     const extra_output_specification2 = withLanguageOutputSpecification(extra_output_specification);
     const request = {
         url: `${config.aiFunctionsBaseURL}/ai-func/generate_example`,
@@ -92,14 +103,15 @@ async function generate_example(tp, target_example_description, target_example_t
             target_example_topic,
             _extra_output_specification: maybeWithHeader(extra_output_specification2, 'Extra output specification'),
             _generation_strategy: maybeWithHeader(generation_strategy, 'Generation strategy'),
-            _examples: maybeWithHeader(examples, 'Examples')
+            _examples: maybeWithHeader(examples, 'Examples'),
+            meta
         })
     }
     // console.log('request:', strJson(request));
     return await tp.obsidian.requestUrl(request);
 }
 
-async function information_retrieval(tp, target_item_description, target_item_topic, extra_output_specification, retrieval_strategy, datasource_specification, examples) {
+async function information_retrieval(tp, target_item_description, target_item_topic, extra_output_specification, retrieval_strategy, datasource_specification, examples, meta) {
     const extra_output_specification2 = withLanguageOutputSpecification(extra_output_specification);
     const request = {
         url: `${config.aiFunctionsBaseURL}/ai-func/information_retrieval`,
@@ -111,7 +123,8 @@ async function information_retrieval(tp, target_item_description, target_item_to
             _extra_output_specification: maybeWithHeader(extra_output_specification2, 'Extra output specification'),
             _retrieval_strategy: maybeWithHeader(retrieval_strategy, 'Retrieval strategy'),
             _datasource_specification: maybeWithHeader(datasource_specification, 'Datasource specification'),
-            _examples: maybeWithHeader(examples, 'Examples'),            
+            _examples: maybeWithHeader(examples, 'Examples'),
+            meta
         })
     }
     //console.log('request:', strJson(request));
@@ -138,7 +151,7 @@ function strSecondaryProperty(keyPath, value, opts) {
     return `${keyStr}:: ${opts?.normalizeText ? normalizeText(value) : value}`
 }
 
-function formatAspectAnalysisResult(result, opts = {sanitizeText: true, normalizeText: false}) { 
+function formatAspectAnalysisResult(result, opts = {sanitizeText: true, normalizeText: false}) {
     const properties = result.by_aspects.flatMap(aspect =>
     aspect.features.reduce(({occurs, result}, feature) => {
         occurs[feature.feature_name] = getOrDefault(occurs, feature.feature_name, 0) + 1;
@@ -174,7 +187,7 @@ async function aspect_based_analysis(tp, content, content_topic, extra_output_sp
     return await tp.obsidian.requestUrl(request);
 }
 
-async function constrained_text_rewriting(tp, content, content_topic, extra_output_specification, transformation_constraints, examples) {
+async function constrained_text_rewriting(tp, content, content_topic, extra_output_specification, transformation_constraints, examples, meta) {
     const extra_output_specification2 = withLanguageOutputSpecification(extra_output_specification);
     const request = {
         url: `${config.aiFunctionsBaseURL}/ai-func/constrained_text_rewriting`,
@@ -185,7 +198,8 @@ async function constrained_text_rewriting(tp, content, content_topic, extra_outp
             content_topic,
             _extra_output_specification: maybeWithHeader(extra_output_specification2, 'Extra output specification'),
             _transformation_constraints: maybeWithHeader(transformation_constraints, 'Transformation constraints'),
-            _examples: maybeWithHeader(examples, 'Examples')
+            _examples: maybeWithHeader(examples, 'Examples'),
+            meta
         })
     }
     // console.log('request:', strJson(request));
@@ -234,7 +248,7 @@ async function aspect_based_devergence_analysis(tp, items_topic, left_item, righ
             meta
         })
     }
-    console.log('request:', strJson(request));
+    //console.log('request:', strJson(request));
     return await tp.obsidian.requestUrl(request);
 }
 
@@ -247,9 +261,9 @@ async function disjoint_sequence_item_generation(tp, input_sequence, input_seque
         headers: {'Api-Token': config.aiFunctionsAPIToken, 'Content-Type': 'application/json'},
         body: JSON.stringify({
             input_sequence: input_sequence,
-            _input_sequence_specification: maybeWithHeader(input_sequence_specification, '# Input sequence specification'),
-            _generation_strategy: maybeWithHeader(generation_strategy, '# Generation strategy'),
-            _extra_output_specification: maybeWithHeader(extra_output_specification2, '# Extra output specification'),
+            _input_sequence_specification: maybeWithHeader(input_sequence_specification, 'Input sequence specification'),
+            _generation_strategy: maybeWithHeader(generation_strategy, 'Generation strategy'),
+            _extra_output_specification: maybeWithHeader(extra_output_specification2, 'Extra output specification'),
             meta
         })
     }
@@ -257,7 +271,38 @@ async function disjoint_sequence_item_generation(tp, input_sequence, input_seque
     return await tp.obsidian.requestUrl(request);
 }
 
+function formatItemGeneration({new_disjoint_items}, opts = {normalizeText: false}) {
+    const new_disjoint_items2 = isEmpty(new_disjoint_items) ?
+      [] :
+      new_disjoint_items.filter(c => c.item_disjointness_score && (typeof c.item_disjointness_score === 'number') && c.item_disjointness_score >= config.disjointnessScoreThreshold);
+    if (isEmpty(new_disjoint_items2)) {
+        //console.log('empty item generation result');
+        return config.emptyValueMark;
+    }
+    return new_disjoint_items2
+      .map(c => c?.item_value)
+      .map(c => opts?.normalizeText ? normalizeText(c) : c)
+      .join('\n')
+}
 
+async function term_identification(tp, term_description, intent_content_specification, retrieval_specification, extra_generation_specification, extra_output_specification, meta) {
+    const extra_output_specification2 = withLanguageOutputSpecification(extra_output_specification);
+    const request = {
+        url: `${config.aiFunctionsBaseURL}/ai-func/term_identification`,
+        method: 'PUT',
+        headers: {'Api-Token': config.aiFunctionsAPIToken, 'Content-Type': 'application/json'},
+        body: JSON.stringify({      
+            term_description, 
+            _intent_content_specification: maybeWithHeader(intent_content_specification, 'Intent content specification'),
+            _retrieval_specification: maybeWithHeader(retrieval_specification, 'Retrieval specification'),
+            _extra_generation_specification: maybeWithHeader(extra_generation_specification, 'Extra generation specification'),
+            extra_output_specification: maybeWithHeader(extra_output_specification2, 'Extra output specification'),
+            meta      
+        })
+    }
+    //console.log('request:', strJson(request));
+    return await tp.obsidian.requestUrl(request);
+}
 
 module.exports = {
     config: () => config,
@@ -275,5 +320,7 @@ module.exports = {
     constrained_text_rewriting,
     formatDifferenceResult,
     aspect_based_devergence_analysis,
-    disjoint_sequence_item_generation
+    formatItemGeneration,
+    disjoint_sequence_item_generation,
+    term_identification
 }

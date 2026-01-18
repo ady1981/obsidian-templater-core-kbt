@@ -1,9 +1,9 @@
 <%*
 ////
 const analysis_strategy = {
-  Ensure_all_feature_values_are_different: true,
   Aspects_to_analyze: 'Primary',
   Granularity: 'Fine-grained',
+  Ensure_all_feature_values_are_different: true,  
 };
 const extra_output_specification = {
   Verbosity: 'Low'

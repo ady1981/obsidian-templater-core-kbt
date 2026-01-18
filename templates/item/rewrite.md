@@ -1,7 +1,11 @@
 <%*
 ////
-const aspects_to_keep = ['Purpose', 'Areas of application', 'Primary aspects'];
-const aspects_to_change = {'Expertness': 'Highest'}
+const aspects_to_keep = [
+  'Primary aspects'
+];
+const aspects_to_change = {
+  'Target_language': 'Russian'
+}
 ////
 const client = tp.user.client;
 const selection = tp.file.selection() || '';
