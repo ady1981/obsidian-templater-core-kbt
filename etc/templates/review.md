@@ -1,9 +1,11 @@
 <%*
 ////
-const review_strategy = {Focus_on: 'evaluation, goal-setting, analysis of strengths and weaknesses, developing actionable recommendations'};
+const review_strategy = {
+  Focus_on: 'evaluation, goal-setting, analysis of strengths and weaknesses, developing actionable recommendations'
+};
 const meta = {
 //    model: 'x-ai/grok-4',
-    model: 'deepseek/deepseek-chat'
+//    model: 'deepseek/deepseek-chat'
 }
 ////
 const selection = tp.file.selection() || '';

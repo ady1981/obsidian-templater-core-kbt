@@ -1,7 +1,10 @@
 <%*
 ////
-const extra_output_specification = {Number_of_examples: 2};
-const generation_strategy = {Complexity: 'simple', Diversity_level: 'exhaustive'};
+const extra_output_specification = {Number_of_examples: 1};
+const generation_strategy = {
+  Complexity: 'simple', 
+  Diversity_level: 'exhaustive'
+};
 ////
 const client = tp.user.client;
 const selection = tp.file.selection() || '';

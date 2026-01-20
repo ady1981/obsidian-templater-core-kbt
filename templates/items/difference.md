@@ -1,17 +1,17 @@
 <%*
 ////
 const analysis_strategy = {
-  Aspects_to_analyze: 'Primary',
+  Aspects_to_analyze: 'Primary',  
   Granularity: 'Fine-grained',
   Ensure_all_feature_values_are_different: true,  
 };
 const extra_output_specification = {
-  Verbosity: 'Low'
+//  Verbosity: 'Low'
 //  Verbosity: 'High'
 };
 const meta = {
+//    model: 'deepseek/deepseek-chat'
 //    model: 'x-ai/grok-4',
-    model: 'deepseek/deepseek-chat'
 }
  ////
 const client = tp.user.client;

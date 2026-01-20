@@ -158,8 +158,8 @@ function formatAspectAnalysisResult(result, opts = {sanitizeText: true, normaliz
         const idxItem = occurs[feature.feature_name] >= 2 ? occurs[feature.feature_name] : null;
         const updResult = [...result,
             aspect?.is_primary_aspect ?
-            strPrimaryProperty([aspect.main_elementary_aspect_name, feature.feature_name, idxItem], feature.feature_elementary_value, opts) :
-            strSecondaryProperty([aspect.main_elementary_aspect_name, feature.feature_name, idxItem], feature.feature_elementary_value, opts)];
+            strPrimaryProperty([aspect.elementary_aspect_name, feature.feature_name, idxItem], feature.feature_elementary_value, opts) :
+            strSecondaryProperty([aspect.elementary_aspect_name, feature.feature_name, idxItem], feature.feature_elementary_value, opts)];
         return {occurs, result: updResult}
         }, {occurs: {}, result: []})
       .result
@@ -187,10 +187,10 @@ async function aspect_based_analysis(tp, content, content_topic, extra_output_sp
     return await tp.obsidian.requestUrl(request);
 }
 
-async function constrained_text_rewriting(tp, content, content_topic, extra_output_specification, transformation_constraints, examples, meta) {
+async function constrained_rewriting(tp, content, content_topic, extra_output_specification, transformation_constraints, examples, meta) {
     const extra_output_specification2 = withLanguageOutputSpecification(extra_output_specification);
     const request = {
-        url: `${config.aiFunctionsBaseURL}/ai-func/constrained_text_rewriting`,
+        url: `${config.aiFunctionsBaseURL}/ai-func/constrained_rewriting`,
         method: 'PUT',
         headers: {'Api-Token': config.aiFunctionsAPIToken, 'Content-Type': 'application/json'},
         body: JSON.stringify({
@@ -210,15 +210,15 @@ function formatDifferenceResult(result, items, opts = {sanitizeText: true, norma
   const leftLines = result.by_aspects.flatMap(aspect =>
     aspect.features.map(feature =>
         aspect?.is_primary_aspect ?
-          strPrimaryProperty([aspect.main_elementary_aspect_name, feature.feature_name], feature.left_item_elementary_value, opts) :
-          strSecondaryProperty([aspect.main_elementary_aspect_name, feature.feature_name], feature.left_item_elementary_value, opts)
+          strPrimaryProperty([aspect.elementary_aspect_name, feature.feature_name], feature.left_item_elementary_value, opts) :
+          strSecondaryProperty([aspect.elementary_aspect_name, feature.feature_name], feature.left_item_elementary_value, opts)
     )
   );
   const rightLines = result.by_aspects.flatMap(aspect =>
     aspect.features.map(feature =>
         aspect?.is_primary_aspect ?
-          strPrimaryProperty([aspect.main_elementary_aspect_name, feature.feature_name], feature.right_item_elementary_value, opts) :
-          strSecondaryProperty([aspect.main_elementary_aspect_name, feature.feature_name], feature.right_item_elementary_value, opts)
+          strPrimaryProperty([aspect.elementary_aspect_name, feature.feature_name], feature.right_item_elementary_value, opts) :
+          strSecondaryProperty([aspect.elementary_aspect_name, feature.feature_name], feature.right_item_elementary_value, opts)
     )
   );
   return `# Difference
@@ -317,7 +317,7 @@ module.exports = {
     information_retrieval,
     formatAspectAnalysisResult,
     aspect_based_analysis,
-    constrained_text_rewriting,
+    constrained_rewriting,
     formatDifferenceResult,
     aspect_based_devergence_analysis,
     formatItemGeneration,
