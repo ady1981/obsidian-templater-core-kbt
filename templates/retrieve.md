@@ -1,8 +1,9 @@
 <%*
+const topic = tp.file.title;
 ////
 const datasource_specification = {
-  Internet_sources: true, 
-  Reputative_sources: true
+//  Only_internet_sources: true, 
+  Only_reputative_sources: true,
 };
 const retrieval_strategy = {
   Experness: true
@@ -24,7 +25,7 @@ const formatAIResult = (result) => {
 };
 const calcAIFunction = async () => {
     const target_item_description = selection;
-    const target_item_topic = tp.file.title;
+    const target_item_topic = topic;
     const extra_output_specification2 = client.strProperties(extra_output_specification);
     const retrieval_strategy2 = client.strProperties(retrieval_strategy);
     const datasource_specification2 = client.strProperties(datasource_specification);

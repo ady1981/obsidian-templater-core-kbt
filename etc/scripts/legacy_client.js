@@ -41,7 +41,7 @@ function removeLineWithPlaceholder(text) {
 }
 
 function withLanguageOutputSpecification(extra_output_specification) {
-    if ((extra_output_specification || '').includes('Output_language:')) {
+    if (extra_output_specification.includes('Output_language:')) {
         return extra_output_specification
     } else {
         const lang_output_specification = strProperties({'Output_language': config.responseLanguage})
@@ -50,10 +50,6 @@ function withLanguageOutputSpecification(extra_output_specification) {
           lang_output_specification;
         return extra_output_specification2
     }
-}
-
-function encodeInMarkdown(codeText, lang = '') {
-    return `\`\`\`${lang}\n${codeText}\`\`\``
 }
 
 async function abstractive_summarize(tp, content, content_topic, summarizing_strategy, examples, meta) {
@@ -73,9 +69,9 @@ async function abstractive_summarize(tp, content, content_topic, summarizing_str
     return await tp.obsidian.requestUrl(request);
 }
 
-function maybeWithHeader(value, header, headingLevel = 1) {
+function maybeWithHeader(value, header) {
     return value ?
-       `${'#'.repeat(headingLevel)} ${header}\n${value}\n` :
+       `# ${header}\n${value}\n` :
        ''
 }
 
@@ -308,47 +304,23 @@ async function term_identification(tp, term_description, intent_content_specific
     return await tp.obsidian.requestUrl(request);
 }
 
-
-async function contextual_generate(tp, task_specification, target_semantic_specification, knowledge_topic, knowledge_source, information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {
-    const target_specification = [maybeWithHeader(task_specification, 'Task specification', 2), maybeWithHeader(target_semantic_specification, 'Target semantic specification', 2)]
-          .filter(isNotEmpty)
-          .join('\n');
-    const context_knowledge_specification = [maybeWithHeader(knowledge_topic, 'Knowledge topic', 2), maybeWithHeader(knowledge_source, 'Knowledge source', 2)]
-          .filter(isNotEmpty)
-          .join('\n');
-    const extra_output_specification2 = withLanguageOutputSpecification(extra_output_specification);    
-    const request = {
-        url: `${config.aiFunctionsBaseURL}/ai-func/contextual_generate`,
-        method: 'PUT',
-        headers: {'Api-Token': config.aiFunctionsAPIToken, 'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            target_specification,
-            context_knowledge_specification,
-            _information_retrieval_strategy: maybeWithHeader(information_retrieval_strategy, 'Information retrieval strategy'),
-            _output_generation_strategy: maybeWithHeader(output_generation_strategy, 'Output generation strategy'),
-            _extra_output_specification: maybeWithHeader(extra_output_specification2, 'Extra output specification'),
-            meta      
-        })
-    }
-    //console.log('request:', strJson(request));
-    return await tp.obsidian.requestUrl(request);
-}
-
-
 module.exports = {
-    // utils
     config: () => config,
     strJson,
-    strProperties,    
+    strProperties,
     isNotEmpty,
-    isEmpty,
     removeLineWithPlaceholder,
     maybeWithHeader,
-    encodeInMarkdown,
-    // formaters
+    abstractive_summarize,
+    objective_expert_review,
+    generate_example,
+    information_retrieval,
     formatAspectAnalysisResult,
+    aspect_based_analysis,
+    constrained_rewriting,
     formatDifferenceResult,
+    aspect_based_devergence_analysis,
     formatItemGeneration,
-    // API helpers
-    contextual_generate
+    disjoint_sequence_item_generation,
+    term_identification
 }
