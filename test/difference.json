@@ -1,0 +1,15 @@
+{
+  "by_aspects": [
+    {
+      "elementary_aspect_name": "Aspect1",
+      "is_primary_aspect": true,
+      "features": [
+        {
+          "feature_name": "FeatureA",
+          "left_item_elementary_value": "LeftValueA",
+          "right_item_elementary_value": "RightValueA"
+        }
+      ]
+    }
+  ]
+}

@@ -155,6 +155,15 @@ function strSecondaryProperty(keyPath, value, opts) {
     return `${keyStr}:: ${opts?.normalizeText ? normalizeText(value) : value}`
 }
 
+const formatFactualQA = (result) => {
+    return result.items.map(({answer_text, answer_references}) => {
+      const refsStr = answer_references.map((c, idx) => `[ref.${idx + 1}:: ${c?.reference_text}${c?.reference_type === 'internal_knowledge' ? ' // internal knowledge' : ''}]`)
+        .join('\n');
+      return `- ${answer_text}\n${refsStr}`
+      })
+      .join('\n')
+}
+
 function formatAspectAnalysisResult(result, opts = {sanitizeText: true, normalizeText: false}) {
     const properties = result.by_aspects.flatMap(aspect =>
     aspect.features.reduce(({occurs, result}, feature) => {
@@ -309,11 +318,11 @@ async function term_identification(tp, term_description, intent_content_specific
 }
 
 
-async function contextual_generate(tp, task_specification, target_semantic_specification, knowledge_topic, knowledge_source, information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {
+async function contextual_generate(tp, task_specification, target_semantic_specification, knowledge_topic, input_content, information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {
     const target_specification = [maybeWithHeader(task_specification, 'Task specification', 2), maybeWithHeader(target_semantic_specification, 'Target semantic specification', 2)]
           .filter(isNotEmpty)
           .join('\n');
-    const context_knowledge_specification = [maybeWithHeader(knowledge_topic, 'Knowledge topic', 2), maybeWithHeader(knowledge_source, 'Knowledge source', 2)]
+    const context_knowledge_specification = [maybeWithHeader(knowledge_topic, 'Knowledge topic', 2), maybeWithHeader(input_content, 'Input content', 2)]
           .filter(isNotEmpty)
           .join('\n');
     const extra_output_specification2 = withLanguageOutputSpecification(extra_output_specification);    
@@ -324,6 +333,26 @@ async function contextual_generate(tp, task_specification, target_semantic_speci
         body: JSON.stringify({
             target_specification,
             context_knowledge_specification,
+            _information_retrieval_strategy: maybeWithHeader(information_retrieval_strategy, 'Information retrieval strategy'),
+            _output_generation_strategy: maybeWithHeader(output_generation_strategy, 'Output generation strategy'),
+            _extra_output_specification: maybeWithHeader(extra_output_specification2, 'Extra output specification'),
+            meta      
+        })
+    }
+    //console.log('request:', strJson(request));
+    return await tp.obsidian.requestUrl(request);
+}
+
+async function factual_question_answering(tp, question, knowledge_topic, target_semantic_specification, information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {    
+    const extra_output_specification2 = withLanguageOutputSpecification(extra_output_specification);    
+    const request = {
+        url: `${config.aiFunctionsBaseURL}/ai-func/factual_question_answering`,
+        method: 'PUT',
+        headers: {'Api-Token': config.aiFunctionsAPIToken, 'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            question,
+            _target_semantic_specification: maybeWithHeader(target_semantic_specification, 'Target semantic specification'),
+            context_knowledge_specification: maybeWithHeader(knowledge_topic, 'Knowledge topic', 2),
             _information_retrieval_strategy: maybeWithHeader(information_retrieval_strategy, 'Information retrieval strategy'),
             _output_generation_strategy: maybeWithHeader(output_generation_strategy, 'Output generation strategy'),
             _extra_output_specification: maybeWithHeader(extra_output_specification2, 'Extra output specification'),
@@ -346,9 +375,11 @@ module.exports = {
     maybeWithHeader,
     encodeInMarkdown,
     // formaters
+    formatFactualQA,
     formatAspectAnalysisResult,
     formatDifferenceResult,
     formatItemGeneration,
     // API helpers
-    contextual_generate
+    contextual_generate,
+    factual_question_answering
 }
