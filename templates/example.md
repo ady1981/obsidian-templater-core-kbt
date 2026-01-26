@@ -9,15 +9,14 @@ const task_specification = {
 const target_semantic_specification = {
 }
 const information_retrieval_strategy = {
-//  Knowledge_sources_selection_strategy: 'use only the provided input text',
 //  Only_authorative_sources: true,
 };
 const output_generation_strategy = { 
 //  Focus_on: '',
-  Item_formatting: 'Markdown',
 };
 const extra_output_specification = {
 //  Number_of_items: 1,
+  Item_formatting: 'Markdown',
 };
 const meta = {
 //  model: 'deepseek/deepseek-chat'
