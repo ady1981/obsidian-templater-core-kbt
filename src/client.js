@@ -1,14 +1,13 @@
-const itemsSeparator = '\n';
-
 const config = {
-    placeholder: '{{}}',
-    itemsSeparator: itemsSeparator,
-    differenceSeparator: itemsSeparator,
     aiFunctionsBaseURL: 'http://127.0.0.1:5001',
     aiFunctionsAPIToken: 'xxx',
     responseLanguage: 'Russian',
-    emptyValueMark: '-',
+    emptyValueMark: '--',
+    placeholder: '{{}}',
+    itemsSeparator: '\n',
+    itemsBullet: '- ',
     disjointnessScoreThreshold: 0.9,
+    referencePropName: 'reference',
 }
 
 function strJson(obj) {
@@ -56,83 +55,10 @@ function encodeInMarkdown(codeText, lang = '') {
     return `\`\`\`${lang}\n${codeText}\`\`\``
 }
 
-async function abstractive_summarize(tp, content, content_topic, summarizing_strategy, examples, meta) {
-    const request = {
-        url: `${config.aiFunctionsBaseURL}/ai-func/abstractive_summarize`,
-        method: 'PUT',
-        headers: {'Api-Token': config.aiFunctionsAPIToken, 'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            language: config.responseLanguage, 
-            content, 
-            content_topic,
-            summarizing_strategy,
-            _examples: maybeWithHeader(examples, 'Examples'),
-            meta
-        })
-    };
-    return await tp.obsidian.requestUrl(request);
-}
-
 function maybeWithHeader(value, header, headingLevel = 1) {
     return value ?
        `${'#'.repeat(headingLevel)} ${header}\n${value}\n` :
        ''
-}
-
-async function objective_expert_review(tp, content, content_topic, review_strategy, examples, meta) {
-    const request = {
-        url: `${config.aiFunctionsBaseURL}/ai-func/objective_expert_review`,
-        method: 'PUT',
-        headers: {'Api-Token': config.aiFunctionsAPIToken, 'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            language: config.responseLanguage, 
-            content, 
-            content_topic, 
-            review_strategy, 
-            _examples: maybeWithHeader(examples, 'Examples'),
-            meta
-        })
-    }
-    return await tp.obsidian.requestUrl(request);
-}
-
-async function generate_example(tp, target_example_description, target_example_topic, extra_output_specification, generation_strategy, examples, meta) {
-    const extra_output_specification2 = withLanguageOutputSpecification(extra_output_specification);
-    const request = {
-        url: `${config.aiFunctionsBaseURL}/ai-func/generate_example`,
-        method: 'PUT',
-        headers: {'Api-Token': config.aiFunctionsAPIToken, 'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            target_example_description,
-            target_example_topic,
-            _extra_output_specification: maybeWithHeader(extra_output_specification2, 'Extra output specification'),
-            _generation_strategy: maybeWithHeader(generation_strategy, 'Generation strategy'),
-            _examples: maybeWithHeader(examples, 'Examples'),
-            meta
-        })
-    }
-    // console.log('request:', strJson(request));
-    return await tp.obsidian.requestUrl(request);
-}
-
-async function information_retrieval(tp, target_item_description, target_item_topic, extra_output_specification, retrieval_strategy, datasource_specification, examples, meta) {
-    const extra_output_specification2 = withLanguageOutputSpecification(extra_output_specification);
-    const request = {
-        url: `${config.aiFunctionsBaseURL}/ai-func/information_retrieval`,
-        method: 'PUT',
-        headers: {'Api-Token': config.aiFunctionsAPIToken, 'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            target_item_description,
-            target_item_topic,
-            _extra_output_specification: maybeWithHeader(extra_output_specification2, 'Extra output specification'),
-            _retrieval_strategy: maybeWithHeader(retrieval_strategy, 'Retrieval strategy'),
-            _datasource_specification: maybeWithHeader(datasource_specification, 'Datasource specification'),
-            _examples: maybeWithHeader(examples, 'Examples'),
-            meta
-        })
-    }
-    //console.log('request:', strJson(request));
-    return await tp.obsidian.requestUrl(request);
 }
 
 const isString = (value) => typeof value === "string";
@@ -157,9 +83,9 @@ function strSecondaryProperty(keyPath, value, opts) {
 
 const formatFactualQA = (result) => {
     return result.items.map(({answer_text, answer_references}) => {
-      const refsStr = answer_references.map((c, idx) => `[ref.${idx + 1}:: ${c?.reference_text}${c?.reference_type === 'internal_knowledge' ? ' // internal knowledge' : ''}]`)
+      const refsStr = answer_references.map((c, idx) => `[${config.referencePropName}.${idx + 1}:: ${c?.reference_text}${c?.reference_type === 'internal_knowledge' ? ' // internal knowledge' : ''}]`)
         .join('\n');
-      return `- ${answer_text}\n${refsStr}`
+      return `${config.itemsBullet}${answer_text}\n${refsStr}`
       })
       .join('\n')
 }
@@ -298,27 +224,8 @@ function formatItemGeneration({new_disjoint_items}, opts = {normalizeText: false
       .join('\n')
 }
 
-async function term_identification(tp, term_description, intent_content_specification, retrieval_specification, extra_generation_specification, extra_output_specification, meta) {
-    const extra_output_specification2 = withLanguageOutputSpecification(extra_output_specification);
-    const request = {
-        url: `${config.aiFunctionsBaseURL}/ai-func/term_identification`,
-        method: 'PUT',
-        headers: {'Api-Token': config.aiFunctionsAPIToken, 'Content-Type': 'application/json'},
-        body: JSON.stringify({      
-            term_description, 
-            _intent_content_specification: maybeWithHeader(intent_content_specification, 'Intent content specification'),
-            _retrieval_specification: maybeWithHeader(retrieval_specification, 'Retrieval specification'),
-            _extra_generation_specification: maybeWithHeader(extra_generation_specification, 'Extra generation specification'),
-            extra_output_specification: maybeWithHeader(extra_output_specification2, 'Extra output specification'),
-            meta      
-        })
-    }
-    //console.log('request:', strJson(request));
-    return await tp.obsidian.requestUrl(request);
-}
 
-
-async function contextual_generate(tp, task_specification, target_semantic_specification, knowledge_topic, input_content, information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {
+async function generate(tp, task_specification, target_semantic_specification, knowledge_topic, input_content, information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {
     const target_specification = [maybeWithHeader(task_specification, 'Task specification', 2), maybeWithHeader(target_semantic_specification, 'Target semantic specification', 2)]
           .filter(isNotEmpty)
           .join('\n');
@@ -327,7 +234,7 @@ async function contextual_generate(tp, task_specification, target_semantic_speci
           .join('\n');
     const extra_output_specification2 = withLanguageOutputSpecification(extra_output_specification);    
     const request = {
-        url: `${config.aiFunctionsBaseURL}/ai-func/contextual_generate`,
+        url: `${config.aiFunctionsBaseURL}/ai-func/generate`,
         method: 'PUT',
         headers: {'Api-Token': config.aiFunctionsAPIToken, 'Content-Type': 'application/json'},
         body: JSON.stringify({
@@ -380,6 +287,6 @@ module.exports = {
     formatDifferenceResult,
     formatItemGeneration,
     // API helpers
-    contextual_generate,
+    generate,
     factual_question_answering
 }

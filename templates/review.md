@@ -42,7 +42,7 @@ const calcAIFunction = async () => {
      const output_generation_strategy2 = client.strProperties(output_generation_strategy);
      const extra_output_specification2 = client.strProperties(extra_output_specification);     
      //
-     const response = await client.contextual_generate(tp, task_specification2, target_semantic_specification2, knowledge_topic, input_content, information_retrieval_strategy2, output_generation_strategy2, extra_output_specification2, meta);
+     const response = await client.generate(tp, task_specification2, target_semantic_specification2, knowledge_topic, input_content, information_retrieval_strategy2, output_generation_strategy2, extra_output_specification2, meta);
     if (response.status === 200) {
       console.log('response:\n' + client.strJson(response.json))
       if (response.json.result?.other_notes) {
