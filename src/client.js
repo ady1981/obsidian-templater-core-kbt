@@ -73,12 +73,12 @@ function getOrDefault(obj, key, defaultValue) {
 
 function strPrimaryProperty(keyPath, value, opts) {
     const keyStr = keyPath.filter(c => c).map(c => opts?.sanitizeText ? sanitizeText(c) : c).join('.');
-    return `**${keyStr}**:: ${opts?.normalizeText ? normalizeText(value) : value}`
+    return `[**${keyStr}**:: ${opts?.normalizeText ? normalizeText(value) : value}]`
 }
 
 function strSecondaryProperty(keyPath, value, opts) {
     const keyStr = keyPath.filter(c => c).map(c => opts?.sanitizeText ? sanitizeText(c) : c).join('.');
-    return `${keyStr}:: ${opts?.normalizeText ? normalizeText(value) : value}`
+    return `[${keyStr}:: ${opts?.normalizeText ? normalizeText(value) : value}]`
 }
 
 const formatFactualQA = (result) => {
@@ -240,7 +240,7 @@ async function generate(tp, task_specification, target_semantic_specification, k
         body: JSON.stringify({
             target_specification,
             context_knowledge_specification,
-            _information_retrieval_strategy: maybeWithHeader(information_retrieval_strategy, 'Information retrieval strategy'),
+            _extra_information_retrieval_strategy: maybeWithHeader(information_retrieval_strategy, 'Information retrieval strategy'),
             _output_generation_strategy: maybeWithHeader(output_generation_strategy, 'Output generation strategy'),
             _extra_output_specification: maybeWithHeader(extra_output_specification2, 'Extra output specification'),
             meta      
@@ -260,7 +260,7 @@ async function factual_question_answering(tp, question, knowledge_topic, target_
             question,
             _target_semantic_specification: maybeWithHeader(target_semantic_specification, 'Target semantic specification'),
             context_knowledge_specification: maybeWithHeader(knowledge_topic, 'Knowledge topic', 2),
-            _information_retrieval_strategy: maybeWithHeader(information_retrieval_strategy, 'Information retrieval strategy'),
+            _extra_information_retrieval_strategy: maybeWithHeader(information_retrieval_strategy, 'Information retrieval strategy'),
             _output_generation_strategy: maybeWithHeader(output_generation_strategy, 'Output generation strategy'),
             _extra_output_specification: maybeWithHeader(extra_output_specification2, 'Extra output specification'),
             meta      
@@ -269,6 +269,27 @@ async function factual_question_answering(tp, question, knowledge_topic, target_
     //console.log('request:', strJson(request));
     return await tp.obsidian.requestUrl(request);
 }
+
+async function aspected_analise(tp, content, knowledge_topic, target_semantic_specification, information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {    
+    const extra_output_specification2 = withLanguageOutputSpecification(extra_output_specification);    
+    const request = {
+        url: `${config.aiFunctionsBaseURL}/ai-func/aspected_analise`,
+        method: 'PUT',
+        headers: {'Api-Token': config.aiFunctionsAPIToken, 'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            content,
+            _target_semantic_specification: maybeWithHeader(target_semantic_specification, 'Target semantic specification'),
+            context_knowledge_specification: maybeWithHeader(knowledge_topic, 'Knowledge topic', 2),
+            _extra_information_retrieval_strategy: maybeWithHeader(information_retrieval_strategy, 'Information retrieval strategy'),
+            _output_generation_strategy: maybeWithHeader(output_generation_strategy, 'Output generation strategy'),
+            _extra_output_specification: maybeWithHeader(extra_output_specification2, 'Extra output specification'),
+            meta      
+        })
+    }
+    //console.log('request:', strJson(request));
+    return await tp.obsidian.requestUrl(request);
+}
+
 
 
 module.exports = {
@@ -288,5 +309,6 @@ module.exports = {
     formatItemGeneration,
     // API helpers
     generate,
-    factual_question_answering
+    factual_question_answering,
+    aspected_analise
 }
