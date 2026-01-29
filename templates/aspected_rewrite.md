@@ -6,9 +6,13 @@ const config = client.config();
 ////
 const content = client.encodeInMarkdown(selection);
 const knowledge_topic = topic;
-const target_semantic_specification = {
-  Aspects_to_analyze: 'Primary',
-  Analysis_granularity: 'Fine-grained',
+const aspects_to_keep = {
+  'Aspects': 'Primary'
+};
+const aspects_to_change = {
+  'Expertness_level': 'High',
+};
+const target_semantic_specification = {  
 };
 const information_retrieval_strategy = {
 //  Only_authorative_sources: true,
@@ -17,7 +21,7 @@ const output_generation_strategy = {
 //  Focus_on: '',
 };
 const extra_output_specification = {
-  'Verbosity': 'Low',
+//  'Verbosity': 'Low',
 };
 const meta = {
 //  model: 'deepseek/deepseek-chat'
@@ -25,14 +29,16 @@ const meta = {
 };
 ////
 let updText = selection;
-const formatAIResult = client.formatAspectAnalysisResult;
-const calcAIFunction = async () => {     
-     const target_semantic_specification2 = client.strProperties(target_semantic_specification);          
+const formatAIResult = client.formatAspectRewriteResult;
+const calcAIFunction = async () => {
+     let target_semantic_specification2 = client.strProperties(target_semantic_specification);
+     target_semantic_specification2 = client.withSection(target_semantic_specification2, 'Aspects to keep', 3, client.strProperties(aspects_to_keep));
+     target_semantic_specification2 = client.withSection(target_semantic_specification2, 'Aspects to change', 3, client.strProperties(aspects_to_change));
      const information_retrieval_strategy2 = client.strProperties(information_retrieval_strategy);
      const output_generation_strategy2 = client.strProperties(output_generation_strategy);
      const extra_output_specification2 = client.strProperties(extra_output_specification);     
      //
-     const response = await client.aspected_analise(tp, content, knowledge_topic, target_semantic_specification2, information_retrieval_strategy2, output_generation_strategy2, extra_output_specification2, meta);
+     const response = await client.aspected_rewrite(tp, content, knowledge_topic, target_semantic_specification2, information_retrieval_strategy2, output_generation_strategy2, extra_output_specification2, meta);
     if (response.status === 200) {
       console.log('response:\n' + client.strJson(response.json))
       if (response.json.result?.other_notes) {

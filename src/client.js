@@ -67,9 +67,9 @@ function maybeWithHeader(value, header, headingLevel = 1) {
 
 const isString = (value) => typeof value === "string";
 
-const normalizeText = (text) => isString(text) ? text.normalize('NFD').replace(/[\u0300-\u036f]/g, '') : text;
+const normalizeUnicodeText = (text) => isString(text) ? text.normalize('NFD').replace(/[\u0300-\u036f]/g, '') : text;
 
-const sanitizeText = (text) => isString(text) ? normalizeText(text).trim().replace(/\s+/g, '-') : text; 
+const sanitizeText = (text) => isString(text) ? normalizeUnicodeText(text).trim().replace(/\s+/g, '-') : text; 
 
 function getOrDefault(obj, key, defaultValue) {
   return obj[key] ?? defaultValue;
@@ -77,16 +77,20 @@ function getOrDefault(obj, key, defaultValue) {
 
 function strPrimaryProperty(keyPath, value, opts) {
     const keyStr = keyPath.filter(c => c).map(c => opts?.sanitizeText ? sanitizeText(c) : c).join('.');
-    return `[**${keyStr}**:: ${opts?.normalizeText ? normalizeText(value) : value}]`
+    return `[**${keyStr}**:: ${opts?.normalizeText ? normalizeUnicodeText(value) : value}]`
 }
 
 function strSecondaryProperty(keyPath, value, opts) {
     const keyStr = keyPath.filter(c => c).map(c => opts?.sanitizeText ? sanitizeText(c) : c).join('.');
-    return `[${keyStr}:: ${opts?.normalizeText ? normalizeText(value) : value}]`
+    return `[${keyStr}:: ${opts?.normalizeText ? normalizeUnicodeText(value) : value}]`
 }
 
 function formatAsList(items, ident = '') {
-    return items.map(c => `${ident}${config.itemsBullet}${c?.item}`).join('\n')
+    return formatTextsAsList(items.map(c => c.item), ident)
+}
+
+function formatTextsAsList(texts, ident = '') {
+    return texts.map(c => `${ident}${config.itemsBullet}${c}`).join('\n')
 }
 
 function formatAsText(items, ident = '') {
@@ -102,59 +106,32 @@ function formatFactualQA(result) {
       .join('\n')
 }
 
-function formatAspectAnalysisResult(result, opts = {sanitizeText: true, normalizeText: false}) {
-    const properties = result.by_aspects.flatMap(aspect =>
-    aspect.features.reduce(({occurs, result}, feature) => {
+function calcProperties(aspect, opts) {
+    return aspect.features.reduce(({occurs, result}, feature) => {
         occurs[feature.feature_name] = getOrDefault(occurs, feature.feature_name, 0) + 1;
         const idxItem = occurs[feature.feature_name] >= 2 ? occurs[feature.feature_name] : null;
         const updResult = [...result,
             aspect?.is_primary_aspect ?
-            strPrimaryProperty([aspect.elementary_aspect_name, feature.feature_name, idxItem], feature.feature_elementary_value, opts) :
-            strSecondaryProperty([aspect.elementary_aspect_name, feature.feature_name, idxItem], feature.feature_elementary_value, opts)];
+            strPrimaryProperty((aspect.elementary_aspect_name !== feature.feature_name) ? 
+                [aspect.elementary_aspect_name, feature.feature_name, idxItem] :
+                [aspect.elementary_aspect_name, idxItem]
+                , feature.feature_elementary_value, opts) :
+            strSecondaryProperty((aspect.elementary_aspect_name !== feature.feature_name) ? 
+              [aspect.elementary_aspect_name, feature.feature_name, idxItem] :
+              [aspect.elementary_aspect_name, idxItem]
+              , feature.feature_elementary_value, opts)];
         return {occurs, result: updResult}
         }, {occurs: {}, result: []})
       .result
-    )
-    return properties.join('\n');
 }
 
-async function aspect_based_analysis(tp, content, content_topic, extra_output_specification, analysis_scope, analysis_strategy, examples, meta) {
-    const extra_output_specification2 = withLanguageOutputSpecification(extra_output_specification);
-    const request = {
-        url: `${config.aiFunctionsBaseURL}/ai-func/aspect_based_analysis`,
-        method: 'PUT',
-        headers: {'Api-Token': config.aiFunctionsAPIToken, 'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            content, 
-            content_topic,
-            _extra_output_specification: maybeWithHeader(extra_output_specification2, 'Extra output specification'),
-            _analysis_scope: maybeWithHeader(analysis_scope, 'Analysis scope'),
-            _analysis_strategy: maybeWithHeader(analysis_strategy, 'Analysis strategy'),
-            _examples: maybeWithHeader(examples, 'Examples'),
-            meta
-        })
-    }
-    // console.log('request:', strJson(request));
-    return await tp.obsidian.requestUrl(request);
+function formatAspectAnalysisResult(result, opts = {sanitizeText: false, normalizeText: true}) {    
+    return formatTextsAsList(result.by_aspects.flatMap(c => calcProperties(c, opts)));
 }
 
-async function constrained_rewriting(tp, content, content_topic, extra_output_specification, transformation_constraints, examples, meta) {
-    const extra_output_specification2 = withLanguageOutputSpecification(extra_output_specification);
-    const request = {
-        url: `${config.aiFunctionsBaseURL}/ai-func/constrained_rewriting`,
-        method: 'PUT',
-        headers: {'Api-Token': config.aiFunctionsAPIToken, 'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            content, 
-            content_topic,
-            _extra_output_specification: maybeWithHeader(extra_output_specification2, 'Extra output specification'),
-            _transformation_constraints: maybeWithHeader(transformation_constraints, 'Transformation constraints'),
-            _examples: maybeWithHeader(examples, 'Examples'),
-            meta
-        })
-    }
-    // console.log('request:', strJson(request));
-    return await tp.obsidian.requestUrl(request);
+function formatAspectRewriteResult(result, opts = {sanitizeText: false, normalizeText: true}) {
+    const propertiesStr = formatTextsAsList(result.changed_aspects.flatMap(c => calcProperties(c, opts)));
+    return result.rewritten_item + '\n' + propertiesStr;
 }
 
 function formatDifferenceResult(result, items, opts = {sanitizeText: true, normalizeText: false}) {
@@ -183,45 +160,6 @@ ${rightLines.join('\n')}
 `;
 }
 
-async function aspect_based_devergence_analysis(tp, items_topic, left_item, right_item, extra_output_specification, analysis_strategy, examples, meta) {
-    const extra_output_specification2 = withLanguageOutputSpecification(extra_output_specification);
-    const request = {
-        url: `${config.aiFunctionsBaseURL}/ai-func/aspect_based_devergence_analysis`,
-        method: 'PUT',
-        headers: {'Api-Token': config.aiFunctionsAPIToken, 'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            items_topic,
-            left_item,
-            right_item,
-            _extra_output_specification: maybeWithHeader(extra_output_specification2, 'Extra output specification'),
-            _analysis_strategy: maybeWithHeader(analysis_strategy, 'Analysis strategy'),
-            _examples: maybeWithHeader(examples, 'Examples'),
-            meta
-        })
-    }
-    //console.log('request:', strJson(request));
-    return await tp.obsidian.requestUrl(request);
-}
-
-
-async function disjoint_sequence_item_generation(tp, input_sequence, input_sequence_specification, generation_strategy, extra_output_specification, meta) {
-    const extra_output_specification2 = withLanguageOutputSpecification(extra_output_specification);
-    const request = {
-        url: `${config.aiFunctionsBaseURL}/ai-func/disjoint_sequence_item_generation`,
-        method: 'PUT',
-        headers: {'Api-Token': config.aiFunctionsAPIToken, 'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            input_sequence: input_sequence,
-            _input_sequence_specification: maybeWithHeader(input_sequence_specification, 'Input sequence specification'),
-            _generation_strategy: maybeWithHeader(generation_strategy, 'Generation strategy'),
-            _extra_output_specification: maybeWithHeader(extra_output_specification2, 'Extra output specification'),
-            meta
-        })
-    }
-    //console.log('request:', strJson(request));
-    return await tp.obsidian.requestUrl(request);
-}
-
 function formatItemGeneration({new_disjoint_items}, opts = {normalizeText: false}) {
     const new_disjoint_items2 = isEmpty(new_disjoint_items) ?
       [] :
@@ -232,18 +170,28 @@ function formatItemGeneration({new_disjoint_items}, opts = {normalizeText: false
     }
     return new_disjoint_items2
       .map(c => c?.item_value)
-      .map(c => opts?.normalizeText ? normalizeText(c) : c)
+      .map(c => opts?.normalizeText ? normalizeUnicodeText(c) : c)
       .join('\n')
 }
 
-function withSection(mdText, content_header, headingLevel, content, contentLang = 'md') {    
+function withContentSection(originMdText, content_header, headingLevel, content, contentLang = 'md') {    
     const contentStr = maybeWithHeader(encodeInMarkdown(content, contentLang), content_header, headingLevel);
-    if (isNotEmpty(mdText)) {
-        return mdText + '\n' + contentStr
+    if (isNotEmpty(originMdText)) {
+        return originMdText + '\n' + contentStr
     } else {
         return contentStr
     }
 }
+
+function withSection(originMdText, text_header, headingLevel, text) {
+    const contentStr = maybeWithHeader(text, text_header, headingLevel);
+    if (isNotEmpty(originMdText)) {
+        return originMdText + '\n' + contentStr
+    } else {
+        return contentStr
+    }
+}
+
 
 async function generate(tp, task_specification, target_semantic_specification, context_knowledge_topic, extra_context_knowledge_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {
     const target_specification = [maybeWithHeader(task_specification, 'Task specification', 2), maybeWithHeader(target_semantic_specification, 'Target semantic specification', 2)]
@@ -262,7 +210,7 @@ async function generate(tp, task_specification, target_semantic_specification, c
         body: JSON.stringify({
             target_specification,
             context_knowledge_specification,
-            _extra_information_retrieval_strategy: maybeWithHeader(extra_information_retrieval_strategy, 'Extra information retrieval strategy'),
+            _extra_information_retrieval_strategy: maybeWithHeader(extra_information_retrieval_strategy, 'Extra information retrieval strategy', 2),
             _output_generation_strategy: maybeWithHeader(output_generation_strategy, 'Output generation strategy'),
             _extra_output_specification: maybeWithHeader(extra_output_specification2, 'Extra output specification'),
             meta      
@@ -272,17 +220,16 @@ async function generate(tp, task_specification, target_semantic_specification, c
     return await tp.obsidian.requestUrl(request);
 }
 
-async function factual_question_answering(tp, question, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {    
+async function custom_generate(customAIFunction, customData, tp, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {
     const extra_output_specification2 = withLanguageOutputSpecification(extra_output_specification);    
     const request = {
-        url: `${config.aiFunctionsBaseURL}/ai-func/factual_question_answering`,
+        url: `${config.aiFunctionsBaseURL}/ai-func/${customAIFunction}`,
         method: 'PUT',
         headers: {'Api-Token': config.aiFunctionsAPIToken, 'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            question,
-            _target_semantic_specification: maybeWithHeader(target_semantic_specification, 'Target semantic specification'),
+        body: JSON.stringify({...customData,        
+            _target_semantic_specification: maybeWithHeader(target_semantic_specification, 'Target semantic specification', 2),
             context_knowledge_specification: maybeWithHeader(knowledge_topic, 'Knowledge topic', 3),
-            _extra_information_retrieval_strategy: maybeWithHeader(extra_information_retrieval_strategy, 'Extra information retrieval strategy'),
+            _extra_information_retrieval_strategy: maybeWithHeader(extra_information_retrieval_strategy, 'Extra information retrieval strategy', 2),
             _output_generation_strategy: maybeWithHeader(output_generation_strategy, 'Output generation strategy'),
             _extra_output_specification: maybeWithHeader(extra_output_specification2, 'Extra output specification'),
             meta      
@@ -292,26 +239,17 @@ async function factual_question_answering(tp, question, knowledge_topic, target_
     return await tp.obsidian.requestUrl(request);
 }
 
-async function aspected_analise(tp, content, knowledge_topic, target_semantic_specification, information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {    
-    const extra_output_specification2 = withLanguageOutputSpecification(extra_output_specification);    
-    const request = {
-        url: `${config.aiFunctionsBaseURL}/ai-func/aspected_analise`,
-        method: 'PUT',
-        headers: {'Api-Token': config.aiFunctionsAPIToken, 'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            content,
-            _target_semantic_specification: maybeWithHeader(target_semantic_specification, 'Target semantic specification'),
-            context_knowledge_specification: maybeWithHeader(knowledge_topic, 'Knowledge topic', 3),
-            _extra_information_retrieval_strategy: maybeWithHeader(information_retrieval_strategy, 'Information retrieval strategy'),
-            _output_generation_strategy: maybeWithHeader(output_generation_strategy, 'Output generation strategy'),
-            _extra_output_specification: maybeWithHeader(extra_output_specification2, 'Extra output specification'),
-            meta      
-        })
-    }
-    //console.log('request:', strJson(request));
-    return await tp.obsidian.requestUrl(request);
+function factual_question_answering(tp, question, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {    
+  return custom_generate('factual_question_answering', {question}, tp, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta)
 }
 
+function aspected_analise(tp, content, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {    
+    return custom_generate('aspected_analise', {content}, tp, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta)
+}
+
+function aspected_rewrite(tp, content, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {    
+    return custom_generate('aspected_rewrite', {content}, tp, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta)
+}
 
 
 module.exports = {
@@ -325,15 +263,18 @@ module.exports = {
     maybeWithHeader,
     encodeInMarkdown,
     withSection,
+    withContentSection,
     // formaters
     formatAsList,
     formatAsText,
     formatFactualQA,
     formatAspectAnalysisResult,
+    formatAspectRewriteResult,
     formatDifferenceResult,
     formatItemGeneration,
     // API helpers
     generate,
     factual_question_answering,
-    aspected_analise
+    aspected_analise,
+    aspected_rewrite
 }

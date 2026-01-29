@@ -33,7 +33,7 @@ const config = client.config();
 let updText = selection;
 const formatAIResult = (result) => client.isEmpty(result?.items) ? config.emptyValueMark : result.items.map(c => c.item).join('\n');
 const calcAIFunction = async () => {     
-     const task_specification2 = client.withSection(client.strProperties(task_specification), 'Content', 2, content, 'md');
+     const task_specification2 = client.withContentSection(client.strProperties(task_specification), 'Content', 2, content, 'md');
      const target_semantic_specification2 = client.strProperties(target_semantic_specification);
      const knowledge_topic = topic;
      const extra_context_knowledge_specification = null;

@@ -29,7 +29,7 @@ const config = client.config();
 let updText = selection;
 const formatAIResult = (result) => client.formatAsText(result?.items);
 const calcAIFunction = async () => {     
-     const task_specification2 = client.withSection(client.strProperties(task_specification), 'Term description', 2, term_description, 'md');
+     const task_specification2 = client.withContentSection(client.strProperties(task_specification), 'Term description', 2, term_description, 'md');
      const target_semantic_specification2 = client.strProperties(target_semantic_specification);
      const knowledge_topic = topic;
      const extra_context_knowledge_specification = null;
