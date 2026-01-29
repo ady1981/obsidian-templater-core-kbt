@@ -6,9 +6,13 @@ const config = {
     placeholder: '{{}}',
     itemsSeparator: '\n',
     itemsBullet: '- ',
+    itemsIndent: '  ',
     disjointnessScoreThreshold: 0.9,
     referencePropName: 'reference',
+    contentCodeBlockBackticks: '~~~',
+    langPropertyName: 'Output_content_language'
 }
+
 
 function strJson(obj) {
     return JSON.stringify(obj, null, 2)
@@ -40,10 +44,10 @@ function removeLineWithPlaceholder(text) {
 }
 
 function withLanguageOutputSpecification(extra_output_specification) {
-    if ((extra_output_specification || '').includes('Output_language:')) {
+    if ((extra_output_specification || '').includes(`${config.langPropertyName}:`)) {
         return extra_output_specification
     } else {
-        const lang_output_specification = strProperties({'Output_language': config.responseLanguage})
+        const lang_output_specification = strProperties({[config.langPropertyName]: config.responseLanguage})
         const extra_output_specification2 = isNotEmpty(extra_output_specification) ?
           lang_output_specification + '\n' + extra_output_specification :
           lang_output_specification;
@@ -51,13 +55,13 @@ function withLanguageOutputSpecification(extra_output_specification) {
     }
 }
 
-function encodeInMarkdown(codeText, lang = '') {
-    return `\`\`\`${lang}\n${codeText}\`\`\``
+function encodeInMarkdown(codeText, lang = 'md') {
+    return `${config.contentCodeBlockBackticks}${lang}\n${codeText}\n${config.contentCodeBlockBackticks}\n`
 }
 
 function maybeWithHeader(value, header, headingLevel = 1) {
     return value ?
-       `${'#'.repeat(headingLevel)} ${header}\n${value}\n` :
+       `${'#'.repeat(headingLevel)} ${header}\n${value}` :
        ''
 }
 
@@ -81,9 +85,17 @@ function strSecondaryProperty(keyPath, value, opts) {
     return `[${keyStr}:: ${opts?.normalizeText ? normalizeText(value) : value}]`
 }
 
-const formatFactualQA = (result) => {
+function formatAsList(items, ident = '') {
+    return items.map(c => `${ident}${config.itemsBullet}${c?.item}`).join('\n')
+}
+
+function formatAsText(items, ident = '') {
+    return isEmpty(items) ? config.emptyValueMark : items.map(c => `${ident}${c?.item}`).join('\n')
+}
+
+function formatFactualQA(result) {
     return result.items.map(({answer_text, answer_references}) => {
-      const refsStr = answer_references.map((c, idx) => `[${config.referencePropName}.${idx + 1}:: ${c?.reference_text}${c?.reference_type === 'internal_knowledge' ? ' // internal knowledge' : ''}]`)
+      const refsStr = answer_references.map((c, idx) => `${config.itemsIndent}${config.itemsBullet}[${config.referencePropName}.${idx + 1}:: ${c?.reference_text}${c?.reference_type === 'internal_knowledge' ? ' // internal knowledge' : ''}]`)
         .join('\n');
       return `${config.itemsBullet}${answer_text}\n${refsStr}`
       })
@@ -224,15 +236,25 @@ function formatItemGeneration({new_disjoint_items}, opts = {normalizeText: false
       .join('\n')
 }
 
+function withSection(mdText, content_header, headingLevel, content, contentLang = 'md') {    
+    const contentStr = maybeWithHeader(encodeInMarkdown(content, contentLang), content_header, headingLevel);
+    if (isNotEmpty(mdText)) {
+        return mdText + '\n' + contentStr
+    } else {
+        return contentStr
+    }
+}
 
-async function generate(tp, task_specification, target_semantic_specification, knowledge_topic, input_content, information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {
+async function generate(tp, task_specification, target_semantic_specification, context_knowledge_topic, extra_context_knowledge_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {
     const target_specification = [maybeWithHeader(task_specification, 'Task specification', 2), maybeWithHeader(target_semantic_specification, 'Target semantic specification', 2)]
           .filter(isNotEmpty)
-          .join('\n');
-    const context_knowledge_specification = [maybeWithHeader(knowledge_topic, 'Knowledge topic', 2), maybeWithHeader(input_content, 'Input content', 2)]
+          .join('\n')
+          .trim();
+    const context_knowledge_specification = [maybeWithHeader(context_knowledge_topic, 'Context knowledge topic', 3), extra_context_knowledge_specification]
           .filter(isNotEmpty)
-          .join('\n');
-    const extra_output_specification2 = withLanguageOutputSpecification(extra_output_specification);    
+          .join('\n')
+          .trim();
+    const extra_output_specification2 = withLanguageOutputSpecification(extra_output_specification) + '\n';
     const request = {
         url: `${config.aiFunctionsBaseURL}/ai-func/generate`,
         method: 'PUT',
@@ -240,7 +262,7 @@ async function generate(tp, task_specification, target_semantic_specification, k
         body: JSON.stringify({
             target_specification,
             context_knowledge_specification,
-            _extra_information_retrieval_strategy: maybeWithHeader(information_retrieval_strategy, 'Information retrieval strategy'),
+            _extra_information_retrieval_strategy: maybeWithHeader(extra_information_retrieval_strategy, 'Extra information retrieval strategy'),
             _output_generation_strategy: maybeWithHeader(output_generation_strategy, 'Output generation strategy'),
             _extra_output_specification: maybeWithHeader(extra_output_specification2, 'Extra output specification'),
             meta      
@@ -250,7 +272,7 @@ async function generate(tp, task_specification, target_semantic_specification, k
     return await tp.obsidian.requestUrl(request);
 }
 
-async function factual_question_answering(tp, question, knowledge_topic, target_semantic_specification, information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {    
+async function factual_question_answering(tp, question, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {    
     const extra_output_specification2 = withLanguageOutputSpecification(extra_output_specification);    
     const request = {
         url: `${config.aiFunctionsBaseURL}/ai-func/factual_question_answering`,
@@ -259,8 +281,8 @@ async function factual_question_answering(tp, question, knowledge_topic, target_
         body: JSON.stringify({
             question,
             _target_semantic_specification: maybeWithHeader(target_semantic_specification, 'Target semantic specification'),
-            context_knowledge_specification: maybeWithHeader(knowledge_topic, 'Knowledge topic', 2),
-            _extra_information_retrieval_strategy: maybeWithHeader(information_retrieval_strategy, 'Information retrieval strategy'),
+            context_knowledge_specification: maybeWithHeader(knowledge_topic, 'Knowledge topic', 3),
+            _extra_information_retrieval_strategy: maybeWithHeader(extra_information_retrieval_strategy, 'Extra information retrieval strategy'),
             _output_generation_strategy: maybeWithHeader(output_generation_strategy, 'Output generation strategy'),
             _extra_output_specification: maybeWithHeader(extra_output_specification2, 'Extra output specification'),
             meta      
@@ -279,7 +301,7 @@ async function aspected_analise(tp, content, knowledge_topic, target_semantic_sp
         body: JSON.stringify({
             content,
             _target_semantic_specification: maybeWithHeader(target_semantic_specification, 'Target semantic specification'),
-            context_knowledge_specification: maybeWithHeader(knowledge_topic, 'Knowledge topic', 2),
+            context_knowledge_specification: maybeWithHeader(knowledge_topic, 'Knowledge topic', 3),
             _extra_information_retrieval_strategy: maybeWithHeader(information_retrieval_strategy, 'Information retrieval strategy'),
             _output_generation_strategy: maybeWithHeader(output_generation_strategy, 'Output generation strategy'),
             _extra_output_specification: maybeWithHeader(extra_output_specification2, 'Extra output specification'),
@@ -302,7 +324,10 @@ module.exports = {
     removeLineWithPlaceholder,
     maybeWithHeader,
     encodeInMarkdown,
+    withSection,
     // formaters
+    formatAsList,
+    formatAsText,
     formatFactualQA,
     formatAspectAnalysisResult,
     formatDifferenceResult,

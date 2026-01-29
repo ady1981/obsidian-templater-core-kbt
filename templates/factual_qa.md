@@ -1,8 +1,10 @@
 <%*
 const topic = tp.file.title;
 const selection = tp.file.selection() || '';
+const client = tp.user.client;
+const config = client.config();
 ////
-const question = selection;
+const question = client.encodeInMarkdown(selection);
 const knowledge_topic = topic;
 const target_semantic_specification = {
 };
@@ -24,8 +26,6 @@ const meta = {
 //  model: 'x-ai/grok-4',
 };
 ////
-const client = tp.user.client;
-const config = client.config();
 let updText = selection;
 const formatAIResult = client.formatFactualQA;
 const calcAIFunction = async () => {
