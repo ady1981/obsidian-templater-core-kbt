@@ -10,7 +10,8 @@ const config = {
     disjointnessScoreThreshold: 0.9,
     referencePropName: 'reference',
     contentCodeBlockBackticks: '~~~',
-    langPropertyName: 'Output_content_language'
+    langPropertyName: 'Output_content_language',
+    differenceItemsSeparator: '\n',
 }
 
 
@@ -134,29 +135,29 @@ function formatAspectRewriteResult(result, opts = {sanitizeText: false, normaliz
     return result.rewritten_item + '\n' + propertiesStr;
 }
 
-function formatDifferenceResult(result, items, opts = {sanitizeText: true, normalizeText: false}) {
+function formatDifferenceResult(result, items, opts = {sanitizeText: false, normalizeText: true}) {
   const leftLines = result.by_aspects.flatMap(aspect =>
     aspect.features.map(feature =>
         aspect?.is_primary_aspect ?
-          strPrimaryProperty([aspect.elementary_aspect_name, feature.feature_name], feature.left_item_elementary_value, opts) :
-          strSecondaryProperty([aspect.elementary_aspect_name, feature.feature_name], feature.left_item_elementary_value, opts)
+          strPrimaryProperty([aspect.elementary_aspect_name, feature.feature_name], feature.left_item_feature_elementary_value, opts) :
+          strSecondaryProperty([aspect.elementary_aspect_name, feature.feature_name], feature.left_item_feature_elementary_value, opts)
     )
   );
   const rightLines = result.by_aspects.flatMap(aspect =>
     aspect.features.map(feature =>
         aspect?.is_primary_aspect ?
-          strPrimaryProperty([aspect.elementary_aspect_name, feature.feature_name], feature.right_item_elementary_value, opts) :
-          strSecondaryProperty([aspect.elementary_aspect_name, feature.feature_name], feature.right_item_elementary_value, opts)
+          strPrimaryProperty([aspect.elementary_aspect_name, feature.feature_name], feature.right_item_feature_elementary_value, opts) :
+          strSecondaryProperty([aspect.elementary_aspect_name, feature.feature_name], feature.right_item_feature_elementary_value, opts)
     )
   );
   return `# Difference
 ## ${items[0]}
 
-${leftLines.join('\n')}
+${formatTextsAsList(leftLines)}
 
 ## ${items[1]}
 
-${rightLines.join('\n')}
+${formatTextsAsList(rightLines)}
 `;
 }
 
@@ -243,12 +244,16 @@ function factual_question_answering(tp, question, knowledge_topic, target_semant
   return custom_generate('factual_question_answering', {question}, tp, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta)
 }
 
-function aspected_analise(tp, content, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {    
-    return custom_generate('aspected_analise', {content}, tp, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta)
+function aspected_analyze(tp, content, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {    
+    return custom_generate('aspected_analyze', {content}, tp, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta)
 }
 
 function aspected_rewrite(tp, content, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {    
     return custom_generate('aspected_rewrite', {content}, tp, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta)
+}
+
+function aspected_devergence_analyze(tp, left_item, right_item, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {    
+    return custom_generate('aspected_devergence_analyze', {left_item, right_item}, tp, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta)
 }
 
 
@@ -275,6 +280,7 @@ module.exports = {
     // API helpers
     generate,
     factual_question_answering,
-    aspected_analise,
-    aspected_rewrite
+    aspected_analyze,
+    aspected_rewrite,
+    aspected_devergence_analyze
 }
