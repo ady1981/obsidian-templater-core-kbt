@@ -2,7 +2,7 @@ const config = {
     aiFunctionsBaseURL: 'http://127.0.0.1:5001',
     aiFunctionsAPIToken: 'xxx',
     responseLanguage: 'Russian',
-    emptyValueMark: '--',
+    emptyValueMark: '-',
     placeholder: '{{}}',
     itemsSeparator: '\n',
     itemsBullet: '- ',
@@ -136,15 +136,15 @@ function formatAspectRewriteResult(result, opts = {sanitizeText: false, normaliz
 }
 
 function formatDifferenceResult(result, items, opts = {sanitizeText: false, normalizeText: true}) {
-  const leftLines = result.by_aspects.flatMap(aspect =>
-    aspect.features.map(feature =>
+  const leftFeatures = result.by_aspects.flatMap(aspect =>
+    aspect.different_features.map(feature =>
         aspect?.is_primary_aspect ?
           strPrimaryProperty([aspect.elementary_aspect_name, feature.feature_name], feature.left_item_feature_elementary_value, opts) :
           strSecondaryProperty([aspect.elementary_aspect_name, feature.feature_name], feature.left_item_feature_elementary_value, opts)
     )
   );
-  const rightLines = result.by_aspects.flatMap(aspect =>
-    aspect.features.map(feature =>
+  const rightFeatures = result.by_aspects.flatMap(aspect =>
+    aspect.different_features.map(feature =>
         aspect?.is_primary_aspect ?
           strPrimaryProperty([aspect.elementary_aspect_name, feature.feature_name], feature.right_item_feature_elementary_value, opts) :
           strSecondaryProperty([aspect.elementary_aspect_name, feature.feature_name], feature.right_item_feature_elementary_value, opts)
@@ -153,26 +153,39 @@ function formatDifferenceResult(result, items, opts = {sanitizeText: false, norm
   return `# Difference
 ## ${items[0]}
 
-${formatTextsAsList(leftLines)}
+${formatTextsAsList(leftFeatures)}
 
 ## ${items[1]}
 
-${formatTextsAsList(rightLines)}
+${formatTextsAsList(rightFeatures)}
 `;
 }
 
-function formatItemGeneration({new_disjoint_items}, opts = {normalizeText: false}) {
-    const new_disjoint_items2 = isEmpty(new_disjoint_items) ?
+function formatCommonResult(result, _items, opts = {sanitizeText: false, normalizeText: true}) {
+  const features = result.by_aspects.flatMap(aspect =>
+    aspect.common_aspect_features.map(feature =>
+        aspect?.is_primary_aspect ?
+          strPrimaryProperty([aspect.elementary_aspect_name, feature.common_feature_name], feature.common_feature_value, opts) :
+          strSecondaryProperty([aspect.elementary_aspect_name, feature.common_feature_name], feature.common_feature_value, opts)
+    )
+  );
+  return formatTextsAsList(features);
+}
+
+function formatNewItem(result, opts = {normalizeText: false}) {
+    const {extra_disjoint_items} = result;
+    const extra_disjoint_items2 = isEmpty(extra_disjoint_items) ?
       [] :
-      new_disjoint_items.filter(c => c.item_disjointness_score && (typeof c.item_disjointness_score === 'number') && c.item_disjointness_score >= config.disjointnessScoreThreshold);
-    if (isEmpty(new_disjoint_items2)) {
+      extra_disjoint_items.filter(c => 
+        c?.is_item_an_instance_of_the_Universe_of_Discourse && (typeof c?.is_item_an_instance_of_the_Universe_of_Discourse === 'boolean') &&
+        (typeof c?.item_disjointness_score === 'number') && (c.item_disjointness_score >= config.disjointnessScoreThreshold));
+    if (isEmpty(extra_disjoint_items2)) {
         //console.log('empty item generation result');
         return config.emptyValueMark;
     }
-    return new_disjoint_items2
+    return formatTextsAsList(extra_disjoint_items2
       .map(c => c?.item_value)
-      .map(c => opts?.normalizeText ? normalizeUnicodeText(c) : c)
-      .join('\n')
+      .map(c => opts?.normalizeText ? normalizeUnicodeText(c) : c))      
 }
 
 function withContentSection(originMdText, content_header, headingLevel, content, contentLang = 'md') {    
@@ -256,6 +269,13 @@ function aspected_devergence_analyze(tp, left_item, right_item, knowledge_topic,
     return custom_generate('aspected_devergence_analyze', {left_item, right_item}, tp, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta)
 }
 
+function aspected_commonality_analyze(tp, left_item, right_item, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {    
+    return custom_generate('aspected_commonality_analyze', {left_item, right_item}, tp, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta)
+}
+
+function disjoint_sequence_item_generation(tp, sequence, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {    
+    return custom_generate('disjoint_sequence_item_generation', {sequence}, tp, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta)
+}
 
 module.exports = {
     // utils
@@ -276,11 +296,14 @@ module.exports = {
     formatAspectAnalysisResult,
     formatAspectRewriteResult,
     formatDifferenceResult,
-    formatItemGeneration,
+    formatCommonResult,
+    formatNewItem,
     // API helpers
     generate,
     factual_question_answering,
     aspected_analyze,
     aspected_rewrite,
-    aspected_devergence_analyze
+    aspected_devergence_analyze,
+    aspected_commonality_analyze,
+    disjoint_sequence_item_generation
 }

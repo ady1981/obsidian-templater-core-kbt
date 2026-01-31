@@ -7,7 +7,7 @@ const {differenceItemsSeparator} = config;
 ////
 const knowledge_topic = topic;
 const target_semantic_specification = {
-  Aspects_to_analyze: 'Primary',
+//  Aspects_to_analyze: 'Primary',
   Analysis_granularity: 'Fine-grained',
 };
 const information_retrieval_strategy = {
@@ -18,6 +18,8 @@ const output_generation_strategy = {
 };
 const extra_output_specification = {
   'Verbosity': 'Low',
+//  'Feature_key_content_specification': 'Only in Russian',
+//  'Feature_value_content_specification': 'Prefer english terms instead of description',
 };
 const meta = {
 //  model: 'deepseek/deepseek-chat'
