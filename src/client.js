@@ -172,7 +172,7 @@ function formatCommonResult(result, _items, opts = {sanitizeText: false, normali
   return formatTextsAsList(features);
 }
 
-function formatNewItem(result, opts = {normalizeText: false}) {
+function formatNewItemResult(result, opts = {normalizeText: false}) {
     const {extra_disjoint_items} = result;
     const extra_disjoint_items2 = isEmpty(extra_disjoint_items) ?
       [] :
@@ -186,6 +186,10 @@ function formatNewItem(result, opts = {normalizeText: false}) {
     return formatTextsAsList(extra_disjoint_items2
       .map(c => c?.item_value)
       .map(c => opts?.normalizeText ? normalizeUnicodeText(c) : c))      
+}
+
+function formatGroupResult(result, _opts) {
+  return result.Universe_of_Discourse_name
 }
 
 function withContentSection(originMdText, content_header, headingLevel, content, contentLang = 'md') {    
@@ -277,6 +281,11 @@ function disjoint_sequence_item_generation(tp, sequence, knowledge_topic, target
     return custom_generate('disjoint_sequence_item_generation', {sequence}, tp, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta)
 }
 
+function group_identification(tp, sequence, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {    
+    return custom_generate('group_identification', {sequence}, tp, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta)
+}
+
+
 module.exports = {
     // utils
     config: () => config,
@@ -297,7 +306,8 @@ module.exports = {
     formatAspectRewriteResult,
     formatDifferenceResult,
     formatCommonResult,
-    formatNewItem,
+    formatNewItemResult,
+    formatGroupResult, 
     // API helpers
     generate,
     factual_question_answering,
@@ -305,5 +315,6 @@ module.exports = {
     aspected_rewrite,
     aspected_devergence_analyze,
     aspected_commonality_analyze,
-    disjoint_sequence_item_generation
+    disjoint_sequence_item_generation,
+    group_identification
 }

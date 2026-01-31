@@ -15,8 +15,6 @@ const output_generation_strategy = {
 //  Focus_on: '',
 };
 const extra_output_specification = {
-  'Number_of_items': 1,
-  'Verbosity': 'Low',
 };
 const meta = {
 //  model: 'deepseek/deepseek-chat'
@@ -24,14 +22,14 @@ const meta = {
 };
 ////
 let updText = selection;
-const formatAIResult = client.formatNewItemResult;
+const formatAIResult = client.formatGroupResult;
 const calcAIFunction = async () => {     
-     const target_semantic_specification2 = client.strProperties(target_semantic_specification);          
+     const target_semantic_specification2 = client.strProperties(target_semantic_specification);
      const information_retrieval_strategy2 = client.strProperties(information_retrieval_strategy);
      const output_generation_strategy2 = client.strProperties(output_generation_strategy);
      const extra_output_specification2 = client.strProperties(extra_output_specification);     
      //
-     const response = await client.disjoint_sequence_item_generation(tp, sequence, knowledge_topic, target_semantic_specification2, information_retrieval_strategy2, output_generation_strategy2, extra_output_specification2, meta);
+     const response = await client.group_identification(tp, sequence, knowledge_topic, target_semantic_specification2, information_retrieval_strategy2, output_generation_strategy2, extra_output_specification2, meta);
     if (response.status === 200) {
       console.log('response:\n' + client.strJson(response.json))
       if (response.json.result?.other_notes) {
