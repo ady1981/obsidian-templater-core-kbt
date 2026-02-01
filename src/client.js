@@ -44,6 +44,13 @@ function removeLineWithPlaceholder(text) {
     return filteredLines.join('\n');
 }
 
+function removeSuffix(str, suffix) {
+  if (str.endsWith(suffix)) {    
+    return str.slice(0, -suffix.length);
+  }
+  return str;
+}
+
 function withLanguageOutputSpecification(extra_output_specification) {
     if ((extra_output_specification || '').includes(`${config.langPropertyName}:`)) {
         return extra_output_specification
@@ -189,7 +196,11 @@ function formatNewItemResult(result, opts = {normalizeText: false}) {
 }
 
 function formatGroupResult(result, _opts) {
-  return result.Universe_of_Discourse_name
+    return result.Universe_of_Discourse_name
+}
+
+function formatIncontextQAResult(result, _opts) {
+    return formatTextsAsList(result.items.map(({answer_text}) => answer_text))      
 }
 
 function withContentSection(originMdText, content_header, headingLevel, content, contentLang = 'md') {    
@@ -238,7 +249,7 @@ async function generate(tp, task_specification, target_semantic_specification, c
     return await tp.obsidian.requestUrl(request);
 }
 
-async function custom_generate(customAIFunction, customData, tp, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {
+async function custom_generative_generate(customAIFunction, customData, tp, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {
     const extra_output_specification2 = withLanguageOutputSpecification(extra_output_specification);    
     const request = {
         url: `${config.aiFunctionsBaseURL}/ai-func/${customAIFunction}`,
@@ -257,32 +268,56 @@ async function custom_generate(customAIFunction, customData, tp, knowledge_topic
     return await tp.obsidian.requestUrl(request);
 }
 
+async function custom_incontext_generate(customAIFunction, customData, tp, source_knowledge_specification, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {
+    const extra_output_specification2 = withLanguageOutputSpecification(extra_output_specification);    
+    const request = {
+        url: `${config.aiFunctionsBaseURL}/ai-func/${customAIFunction}`,
+        method: 'PUT',
+        headers: {'Api-Token': config.aiFunctionsAPIToken, 'Content-Type': 'application/json'},
+        body: JSON.stringify({...customData,        
+            _target_semantic_specification: maybeWithHeader(target_semantic_specification, 'Target semantic specification', 2),
+            source_knowledge_specification,
+            _extra_information_retrieval_strategy: maybeWithHeader(extra_information_retrieval_strategy, 'Extra information retrieval strategy', 2),
+            _output_generation_strategy: maybeWithHeader(output_generation_strategy, 'Output generation strategy'),
+            _extra_output_specification: maybeWithHeader(extra_output_specification2, 'Extra output specification'),
+            meta      
+        })
+    }
+    //console.log('request:', strJson(request));
+    return await tp.obsidian.requestUrl(request);
+}
+
+
 function factual_question_answering(tp, question, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {    
-  return custom_generate('factual_question_answering', {question}, tp, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta)
+  return custom_generative_generate('factual_question_answering', {question}, tp, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta)
 }
 
 function aspected_analyze(tp, content, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {    
-    return custom_generate('aspected_analyze', {content}, tp, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta)
+    return custom_generative_generate('aspected_analyze', {content}, tp, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta)
 }
 
 function aspected_rewrite(tp, content, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {    
-    return custom_generate('aspected_rewrite', {content}, tp, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta)
+    return custom_generative_generate('aspected_rewrite', {content}, tp, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta)
 }
 
 function aspected_devergence_analyze(tp, left_item, right_item, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {    
-    return custom_generate('aspected_devergence_analyze', {left_item, right_item}, tp, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta)
+    return custom_generative_generate('aspected_devergence_analyze', {left_item, right_item}, tp, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta)
 }
 
 function aspected_commonality_analyze(tp, left_item, right_item, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {    
-    return custom_generate('aspected_commonality_analyze', {left_item, right_item}, tp, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta)
+    return custom_generative_generate('aspected_commonality_analyze', {left_item, right_item}, tp, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta)
 }
 
 function disjoint_sequence_item_generation(tp, sequence, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {    
-    return custom_generate('disjoint_sequence_item_generation', {sequence}, tp, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta)
+    return custom_generative_generate('disjoint_sequence_item_generation', {sequence}, tp, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta)
 }
 
 function group_identification(tp, sequence, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {    
-    return custom_generate('group_identification', {sequence}, tp, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta)
+    return custom_generative_generate('group_identification', {sequence}, tp, knowledge_topic, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta)
+}
+
+function incontext_question_answering(tp, question, source_knowledge_specification, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta) {    
+    return custom_incontext_generate('incontext_question_answering', {question}, tp, source_knowledge_specification, target_semantic_specification, extra_information_retrieval_strategy, output_generation_strategy, extra_output_specification, meta)
 }
 
 
@@ -294,6 +329,7 @@ module.exports = {
     isNotEmpty,
     isEmpty,
     removeLineWithPlaceholder,
+    removeSuffix,
     maybeWithHeader,
     encodeInMarkdown,
     withSection,
@@ -308,6 +344,7 @@ module.exports = {
     formatCommonResult,
     formatNewItemResult,
     formatGroupResult, 
+    formatIncontextQAResult,
     // API helpers
     generate,
     factual_question_answering,
@@ -316,5 +353,6 @@ module.exports = {
     aspected_devergence_analyze,
     aspected_commonality_analyze,
     disjoint_sequence_item_generation,
-    group_identification
+    group_identification,
+    incontext_question_answering
 }
