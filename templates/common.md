@@ -7,7 +7,7 @@ const {differenceItemsSeparator} = config;
 ////
 const knowledge_topic = topic;
 const target_semantic_specification = {
-  Aspects_to_analyze: 'Primary',
+//  Aspects_to_analyze: 'Primary',
   Analysis_granularity: 'Fine-grained',
 };
 const information_retrieval_strategy = {

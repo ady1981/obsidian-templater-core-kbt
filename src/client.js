@@ -168,7 +168,7 @@ ${formatTextsAsList(rightFeatures)}
 `;
 }
 
-function formatCommonResult(result, _items, opts = {sanitizeText: false, normalizeText: true}) {
+function formatCommonResult(result, _items, opts = {sanitizeText: false, normalizeText: false}) {
   const features = result.by_aspects.flatMap(aspect =>
     aspect.common_aspect_features.map(feature =>
         aspect?.is_primary_aspect ?

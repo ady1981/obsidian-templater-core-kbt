@@ -21,7 +21,7 @@ const output_generation_strategy = {
 //  Focus_on: '',
 };
 const extra_output_specification = {
-//  'Verbosity': 'Low',
+ 'Verbosity': 'Low',
 };
 const meta = {
 //  model: 'deepseek/deepseek-chat'
@@ -49,7 +49,7 @@ const calcAIFunction = async () => {
 }
 
 if (selection.length > 0) {
-  updText = selection.trim() + '\n' + (await calcAIFunction()) + '\n';
+  updText = selection.trim() + '\n\n' + (await calcAIFunction()) + '\n';
 } else {    
     new Notice().noticeEl.append(createEl("strong", { text: "No selection" }));
 }
