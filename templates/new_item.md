@@ -15,7 +15,8 @@ const output_generation_strategy = {
 //  Focus_on: '',
 };
 const extra_output_specification = {
-  'Number_of_items': 1,
+//  'Number_of_items': 1,
+  'Number_of_items': 3,
   'Verbosity': 'Low',
 };
 const meta = {
