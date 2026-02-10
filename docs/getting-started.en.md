@@ -112,7 +112,7 @@ Response:
 ### Universal template for a prompt
 
 It is clear that the central theme for effective LLM use is prompt engineering, i.e., approaches to building effective queries to obtain the desired answers.
-As is known, LLMs always solve only one problem - generatively-continue-prompt. A general representation with the выделением of different parts for the prompt can be written as follows:
+As is known, LLMs always solve only one problem - generatively-continue-prompt. A general representation with the different parts for the prompt can be written as follows:
 ```yaml
 LLM_prompt:
   prompt_structure_and_notation_self_specification: []
@@ -389,7 +389,7 @@ In summary, we will list what could be learned in this article:
 * variant of basic Templater templates for knowledge development in Obsidian
 * tutorial on how to configure and use basic templates in Obsidian
 
-Or differently:
+Or by another way:
 
 #### Working with .md documents to develop knowledge using LLMs
 
