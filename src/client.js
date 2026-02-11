@@ -1,7 +1,8 @@
 const config = {
     aiFunctionsBaseURL: 'http://127.0.0.1:5001',
     aiFunctionsAPIToken: 'xxx',
-    responseLanguage: 'Russian',
+    // responseLanguage: 'Russian',
+    responseLanguage: 'English',
     emptyValueMark: '-',
     placeholder: '{{}}',
     itemsSeparator: '\n',

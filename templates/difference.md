@@ -30,14 +30,14 @@ let updText = selection;
 const formatAIResult = client.formatDifferenceResult;
 const calcAIFunction = async (items) => {     
      const [leftItem, rightItem] = items;
-     const target_semantic_specification2 = client.strProperties(target_semantic_specification);          
+     const target_semantic_specification2 = client.strProperties(target_semantic_specification); 
      const information_retrieval_strategy2 = client.strProperties(information_retrieval_strategy);
      const output_generation_strategy2 = client.strProperties(output_generation_strategy);
      const extra_output_specification2 = client.strProperties(extra_output_specification);     
      //
      const response = await client.aspected_devergence_analyze(tp, leftItem, rightItem, knowledge_topic, target_semantic_specification2, information_retrieval_strategy2, output_generation_strategy2, extra_output_specification2, meta);
     if (response.status === 200) {
-      console.log('response:\n' + client.strJson(response.json))
+      //console.log('response:\n' + client.strJson(response.json))
       if (response.json.result?.other_notes) {
         console.log(`other_notes: ${response.json.result.other_notes}`)
       }      
