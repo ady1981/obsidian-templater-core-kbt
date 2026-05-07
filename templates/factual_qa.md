@@ -10,10 +10,12 @@ const target_semantic_specification = {
 };
 const information_retrieval_strategy = {
   Only_authorative_sources: true,
-  Prefer_internet_references: true,
+//  Prefer_internet_references: true,
 };
-const output_generation_strategy = {  
+const output_generation_strategy = {
 //  Focus_on: '',
+  'ONLY_use_specified_knowledge_context': true,
+  'IGNORE_not_specified_knowledge_context': true,
 };
 const extra_output_specification = {  
   Result_per_item: true,
@@ -24,6 +26,8 @@ const extra_output_specification = {
 const meta = {
 //  model: 'deepseek/deepseek-chat'
 //  model: 'x-ai/grok-4',
+//  model: 'moonshotai/kimi-2',    
+//  model: 'google/gemini-pro-latest',    
 };
 ////
 let updText = selection;
